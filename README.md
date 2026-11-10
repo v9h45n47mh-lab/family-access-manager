@@ -26,7 +26,7 @@ Die Umstellung verändert keine Berechtigungsregeln und ergänzt keine Kalenderf
 ### Über Marketplace / HACS
 
 1. `https://github.com/v9h45n47mh-lab/family-access-manager` als **benutzerdefiniertes Repository** mit der Kategorie **Integration** hinzufügen.
-2. Da 0.1.0 ausdrücklich als Vorabversion veröffentlicht wird, gegebenenfalls Vorab-/Betaversionen in der Versionsauswahl anzeigen lassen.
+2. Da 0.2.0 ausdrücklich als Vorabversion veröffentlicht wird, gegebenenfalls Vorab-/Betaversionen in der Versionsauswahl anzeigen lassen.
 3. **Family Access Manager (Prüfversion)** herunterladen und HA neu starten.
 4. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
 
@@ -58,7 +58,7 @@ Es werden keine Ports, Netzwerkeinstellungen, HA-Gruppen oder vorhandenen Tokens
 
 ## Bedeutung der Rechte
 
-| Auswahl | Wirkung in 0.1.0 |
+| Auswahl | Wirkung in 0.2.0 |
 |---|---|
 | Dashboard: Anzeigen | Konfiguration über die eigene API abrufen; bei eingeschalteter Dashboard-Sperre auch native Konfigurationsabfragen zulassen. |
 | Dashboard: Bedienen | Schließt Anzeigen ein; tatsächliche Bedienung braucht zusätzlich eine Gerätefreigabe. |
@@ -67,7 +67,7 @@ Es werden keine Ports, Netzwerkeinstellungen, HA-Gruppen oder vorhandenen Tokens
 | Gerät: Bedienen | Zusätzlich die unterstützten Aktionen über die eigene API ausführen. |
 | Administrator/Eigentümer | Echte HA-Administratoren und der Eigentümer behalten Vollzugriff. Rollen können keine Administratorrechte verleihen. |
 
-Gerätebedienung ist zunächst nur für den virtuellen Testschalter eingeschaltet. Die Option **Freigegebene Geräte über die Family-Access-API bedienen** erlaubt darüber hinaus ausdrücklich freigegebene Lampen, Schalter, Input-Booleans und Abdeckungen. Es gibt dafür in 0.1.0 noch keine allgemeine Gerätebedienoberfläche; die Funktionen sind für die spätere Einbindung vorbereitet.
+Gerätebedienung ist zunächst nur für den virtuellen Testschalter eingeschaltet. Die Option **Freigegebene Geräte über die Family-Access-API bedienen** erlaubt darüber hinaus ausdrücklich freigegebene Lampen, Schalter, Input-Booleans und Abdeckungen. Es gibt dafür in 0.2.0 noch keine allgemeine Gerätebedienoberfläche; die Funktionen sind für die spätere Einbindung vorbereitet.
 
 Freigaben aus mehreren Quellen werden addiert; die höhere Freigabe gilt. **Kein Zugriff** entfernt einen Eintrag, ist aber kein ausdrückliches Verbot gegenüber einer zusätzlichen Bereichs- oder Labelfreigabe. Labels werden bei jeder Anfrage anhand der aktuellen Entitäts- und Gerätezuordnung ausgewertet. Bereiche werden direkt von der Entität oder ersatzweise vom Gerät übernommen. Neue entsprechend zugeordnete Entitäten erhalten damit automatisch die Freigabe. Labels auf anderen Objekttypen werden nicht geerbt.
 
@@ -98,6 +98,7 @@ Die Berechtigung für eine Entität gilt innerhalb dieser API auf allen Dashboar
 - Die automatisierten pytest-Tests verwenden `pytest-homeassistant-custom-component==0.13.375` und dessen HA-Version **2026.10.4**.
 - Für den aktuellen HA-Core existiert ein davon unabhängiger Installations- und API-Test: `tests/smoke_current_core.py`. Dieser startet eine isolierte HA-Instanz und sendet echte lokale HTTP-/WebSocket-Anfragen. Die Netzwerkschnittstellenliste wird dabei auf eine simulierte Loopback-Schnittstelle begrenzt.
 - `tests/panel_dom.cjs` prüft die Bedienlogik und sicheres Escaping mit einer lokalen DOM-Implementierung. Das ist kein Browser-Renderingtest.
+- `tests/ui-browser.cjs` prüft 40 Desktop-/Mobil-/Themevarianten in Chromium, vergleicht berechnete Stile mit den Originalkomponenten und prüft die Bedienabläufe. Screenshots stehen als CI-Artefakt bereit.
 - Die tatsächlich abgeschlossenen Prüfungen und die verbleibenden Grenzen stehen in `docs/TESTERGEBNISSE.md`.
 
 ```bash
@@ -109,9 +110,12 @@ python -m pytest
 pip install homeassistant==2026.11.1 home-assistant-frontend==20261028.5
 PYTHONPATH=. python tests/smoke_current_core.py
 
-# DOM-Bedienlogik:
-npm install
+# UI-Kit, DOM-Bedienlogik und Browserdarstellung:
+npm ci --ignore-scripts
+npm run check:kit
 npm run test:panel
+npx playwright install --with-deps chromium
+npm run test:browser
 ```
 
 Die Tests arbeiten ausschließlich mit Testkonten und temporären Konfigurationen. Nicht gegen ein produktives HA-Konfigurationsverzeichnis ausführen.

@@ -2,6 +2,8 @@
   "home_assistant": "2026.11.1",
   "checks": {
     "installation_and_virtual_switch": true,
+    "vendored_kit_module_served_with_correct_mime": true,
+    "marketplace_brand_served_locally": true,
     "unauthenticated_rest_denied": true,
     "child_cannot_read_admin_configuration": true,
     "viewer_can_read_but_cannot_control": true,
