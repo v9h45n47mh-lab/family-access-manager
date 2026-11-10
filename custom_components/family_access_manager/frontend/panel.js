@@ -120,8 +120,8 @@ class FamilyAccessPanel extends HTMLElement {
     }).join('');
     return section({id:'users',title:'Benutzer',content:feedback('Ein Konto erhält die gewählte Rolle. Administratoren behalten Vollzugriff.')+users})
       + section({id:'activation',title:'Prüfversion aktivieren',content:
-        row({title:'Dashboard-Konfigurationen für zugeordnete Benutzer sperren',description:'Prüft direkte Lovelace-Konfigurationsanfragen. Geräte, Verlauf und andere HA-APIs bleiben außerhalb dieser Sperre.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})
-        +row({title:'Freigegebene Geräte über die Family-Access-API bedienen',description:'Ohne diese Option kann über diese API nur der virtuelle Testschalter geschaltet werden.',trailing:toggle({label:'Gerätebedienung freigeben',action:'setting-change',checked:this.policy.device_control,data:{setting:'device_control'}})})});
+        row({title:'Dashboard-Konfigurationen für zugeordnete Benutzer sperren',description:'Prüft direkte Lovelace-Konfigurationsanfragen. Geräte, Verlauf und andere HA-APIs bleiben außerhalb dieser Sperre.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',iconOnly:true,checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})
+        +row({title:'Freigegebene Geräte über die Family-Access-API bedienen',description:'Ohne diese Option kann über diese API nur der virtuelle Testschalter geschaltet werden.',trailing:toggle({label:'Gerätebedienung freigeben',action:'setting-change',iconOnly:true,checked:this.policy.device_control,data:{setting:'device_control'}})})});
   }
   roleContent() {
     const role=this.policy.roles[this.roleId],add=button({label:'Rolle',icon:'add',action:'add-role',variant:'primary'});
