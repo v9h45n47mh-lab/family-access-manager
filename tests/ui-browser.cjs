@@ -21,12 +21,12 @@ const server=http.createServer((req,res)=>{
  fs.mkdirSync(path.join(root,'test-results'),{recursive:true});
  try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
-  const app=page.locator('family-access-panel');await app.getByRole('button',{name:'Benutzer',exact:true}).waitFor();
+  const app=page.locator('family-access-panel');await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).waitFor();
   const pages=[['users','Benutzer'],['roles','Rollen'],['test','Prüfen'],['settings','Umfang']];
   for(const width of [1100,430,390,375,320])for(const theme of ['light','dark']){
    await page.setViewportSize({width,height:1000});await page.evaluate(dark=>document.body.classList.toggle('dark',dark),theme==='dark');
    for(const [id,label] of pages){
-    await app.getByRole('button',{name:label,exact:true}).first().click();
+    await app.locator('.card-top').getByRole('button',{name:label,exact:true}).click();
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No document overflow: '+[width,theme,id]);
     const bad=await app.evaluate(el=>[...el.shadowRoot.querySelectorAll('.setting-row,.grid,.card-top,.fui-panel-header')].filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>[n.className,n.scrollWidth,n.clientWidth]));
     assert.deepEqual(bad,[],'No control overflow: '+[width,theme,id]);
@@ -41,27 +41,27 @@ const server=http.createServer((req,res)=>{
     if(width===1100||width===390)await app.screenshot({path:path.join(root,'test-results',id+'-'+width+'-'+theme+'.png')});
    }
   }
-  await page.setViewportSize({width:390,height:1000});await app.getByRole('button',{name:'Benutzer',exact:true}).click();
+  await page.setViewportSize({width:390,height:1000});await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).click();
   await app.locator('[data-user="paul"]').selectOption('deny');
   await app.getByRole('switch',{name:'Dashboard-Konfigurationen sperren',exact:true}).click();
   assert.equal(await app.getByRole('switch',{name:'Dashboard-Konfigurationen sperren',exact:true}).getAttribute('aria-checked'),'true');
   await app.getByRole('button',{name:'Änderungen speichern',exact:true}).click();
   await app.getByRole('status').filter({hasText:'Rechte gespeichert'}).waitFor();
   assert.deepEqual(await page.evaluate(()=>window.fixture.saves.at(-1).bindings.paul),[]);
-  await app.getByRole('button',{name:'Rollen',exact:true}).click();assert.equal(await app.locator('img').count(),0);
+  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();assert.equal(await app.locator('img').count(),0);
   await app.locator('[data-grant="switch.probe"]').selectOption('control');
   await app.getByRole('button',{name:'Neu laden',exact:true}).click();
   const modal=app.getByRole('dialog',{name:'Änderungen verwerfen?',exact:true});await modal.waitFor();
   await page.keyboard.press('Escape');assert.equal(await modal.isVisible(),false);assert.equal(await app.getByRole('button',{name:'Neu laden',exact:true}).evaluate(el=>el===el.getRootNode().activeElement),true);
   await app.getByRole('button',{name:'Neu laden',exact:true}).click();await modal.getByRole('button',{name:'Abbrechen',exact:true}).click();assert.equal(await modal.isVisible(),false);
   await app.getByRole('button',{name:'Änderungen speichern',exact:true}).click();await app.getByRole('status').filter({hasText:'Rechte gespeichert'}).waitFor();assert.equal(await page.evaluate(()=>window.fixture.saves.at(-1).roles.family.entities['switch.probe']),'control');
-  await app.getByRole('button',{name:'Rollen',exact:true}).click();await app.getByRole('textbox',{name:'Suchen',exact:true}).fill('Licht Paul');assert.equal(await app.locator('#resources .setting-row').count(),1);
-  await app.getByRole('button',{name:'Prüfen',exact:true}).click();await app.getByRole('button',{name:'HTTP und WebSocket prüfen',exact:true}).click();await app.getByRole('textbox',{name:'Ergebnis',exact:true}).waitFor();assert((await app.getByRole('textbox',{name:'Ergebnis',exact:true}).inputValue()).includes('Dieselbe Prüfinstanz erreicht'));
+  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();await app.getByRole('textbox',{name:'Suchen',exact:true}).fill('Licht Paul');assert.equal(await app.locator('#resources .setting-row').count(),1);
+  await app.locator('.card-top').getByRole('button',{name:'Prüfen',exact:true}).click();await app.getByRole('button',{name:'HTTP und WebSocket prüfen',exact:true}).click();await app.getByRole('textbox',{name:'Ergebnis',exact:true}).waitFor();assert((await app.getByRole('textbox',{name:'Ergebnis',exact:true}).inputValue()).includes('Dieselbe Prüfinstanz erreicht'));
   await app.getByRole('button',{name:'Testschalter umschalten',exact:true}).click();assert.equal(await page.evaluate(()=>window.fixture.state),'on');
   await page.evaluate(()=>{window.fixture.status.is_admin=false;window.app.hass={...window.fixture.hass,user:{id:'paul'}};});
-  await app.getByRole('button',{name:'Prüfen',exact:true}).waitFor();assert.equal(await app.getByRole('button',{name:'Benutzer',exact:true}).count(),0);assert.equal(await app.locator('[data-action="save"]').count(),0);
+  await app.locator('.card-top').getByRole('button',{name:'Prüfen',exact:true}).waitFor();assert.equal(await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).count(),0);assert.equal(await app.locator('[data-action="save"]').count(),0);
   await app.getByRole('button',{name:'Testschalter umschalten',exact:true}).click();await app.getByRole('alert').filter({hasText:'Nicht freigegeben'}).waitFor();
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(root,'test-results/validation.json'),JSON.stringify({ui:'1.2.1',variants:results,actions:['user_assignment','controlled_switch','permission_save','search','escaping','native_dialog_escape','cancel_and_focus','http_ws_check','virtual_switch','child_permissions'],consoleErrors:errors},null,2));
   console.log(JSON.stringify({variants:results.length,themes:2,widths:[1100,430,390,375,320],behavior:'passed'}));
- }finally{await browser.close();server.close();}
+ }catch(err){await page.screenshot({path:path.join(root,'test-results/failure.png'),fullPage:true});throw err;}finally{await browser.close();server.close();}
 })().catch(err=>{console.error(err);process.exitCode=1;server.close();});
