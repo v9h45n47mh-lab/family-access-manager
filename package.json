@@ -1,6 +1,13 @@
 {
   "name": "family-access-manager-prototype-tests",
   "private": true,
-  "scripts": {"test:panel": "node tests/panel_dom.cjs"},
-  "devDependencies": {"linkedom": "^0.18.12"}
+  "scripts": {
+    "test:panel": "node tests/panel_dom.cjs",
+    "test:browser": "node tests/ui-browser.cjs",
+    "check:kit": "node tests/check-kit.cjs"
+  },
+  "devDependencies": {
+    "linkedom": "^0.18.12",
+    "playwright": "1.62.1"
+  }
 }

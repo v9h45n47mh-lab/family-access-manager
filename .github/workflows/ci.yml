@@ -2,7 +2,7 @@ name: Validate prototype
 
 on:
   push:
-    branches: [main]
+    branches: [main, "ui-kit-*"]
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -44,7 +44,15 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts
+      - run: npm run check:kit
       - run: npm run test:panel
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-screenshots
+          path: test-results/
       - run: node --check custom_components/family_access_manager/frontend/panel.js
       - uses: actions/setup-python@v5
         with:
@@ -52,3 +60,26 @@ jobs:
       - run: python scripts/build_release.py
       - name: Check committed source checksums
         run: git diff --exit-code -- SHA256SUMS.txt
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release ')
+    needs: [ha-tests, current-core-smoke, panel-and-package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: python scripts/build_release.py
+      - name: Publish tested prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python -c 'import json; print(json.load(open("custom_components/family_access_manager/manifest.json"))["version"])')
+          if gh release view "v$version" > /dev/null 2>&1; then
+            echo "Release already exists; leaving it unchanged."
+          else
+            gh release create "v$version" dist/*.zip dist/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title "Family Access Manager $version – HA UI Kit 1.2.1" --notes-file docs/RELEASE_0.2.0.md
+          fi

@@ -2,8 +2,10 @@
 const {parseHTML}=require('linkedom');
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert/strict');
 const {window}=parseHTML('<html><body><family-access-panel></family-access-panel></body></html>');
-const context=vm.createContext({window,document:window.document,HTMLElement:window.HTMLElement,customElements:window.customElements,CustomEvent:window.CustomEvent,Event:window.Event,structuredClone,console,location:{origin:'https://example.ui.nabu.casa',hostname:'example.ui.nabu.casa'},confirm:()=>true});
-vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family_access_manager/frontend/panel.js'),'utf8'),context);
+const context=vm.createContext({window,document:window.document,HTMLElement:window.HTMLElement,customElements:window.customElements,CustomEvent:window.CustomEvent,Event:window.Event,structuredClone,console,location:{origin:'https://example.ui.nabu.casa',hostname:'example.ui.nabu.casa'},MutationObserver:window.MutationObserver,queueMicrotask,setTimeout,clearTimeout,requestAnimationFrame:fn=>setTimeout(fn,0)});
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family_access_manager/frontend/family-ui/1.2.1/family-ui.js'),'utf8').replace(/^export /gm,''),context);
+vm.runInContext('const esc=escapeHtml;',context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family_access_manager/frontend/panel.js'),'utf8').replace(/^import[^\n]*\n/,''),context);
 const panel=window.document.querySelector('family-access-panel');
 const policy={revision:0,native_dashboard_gate:false,device_control:false,roles:{family:{name:'Kinder',dashboards:{'dashboard-paul':'view'},entities:{},areas:{},labels:{}}},bindings:{paul:['family']}};
 const status={is_admin:true,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'0.1.0',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
@@ -20,7 +22,7 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   },callApi:async()=>({result:status})};
   await settle();
   assert(panel.shadowRoot.innerHTML.includes('Benutzer'));
-  click('[data-tab="roles"]');
+  click('[data-action="navigate"][data-page="roles"]');
   assert.equal(panel.shadowRoot.querySelectorAll('img').length,0,'Entity names must be escaped');
   const select=panel.shadowRoot.querySelector('[data-grant="switch.probe"]');
   for(const option of select.querySelectorAll('option')) option.selected=option.value==='control';
@@ -30,11 +32,11 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   click('[data-action="save"]');await settle();
   assert.equal(saves,1);
   assert.equal(snapshot.policy.roles.family.entities['switch.probe'],'control');
-  click('[data-tab="test"]');click('[data-action="api-check"]');await settle();
+  click('[data-action="navigate"][data-page="test"]');click('[data-action="api-check"]');await settle();
   assert(panel.shadowRoot.innerHTML.includes('Dieselbe Prüfinstanz erreicht'));
   status.is_admin=false;
   panel.hass={user:{id:'paul'},callWS:async msg=>structuredClone(status)};await settle();
-  assert.equal(panel.shadowRoot.querySelector('[data-tab="users"]'),null);
+  assert.equal(panel.shadowRoot.querySelector('[data-action="navigate"][data-page="users"]'),null);
   assert.equal(panel.shadowRoot.querySelector('[data-action="save"]'),null);
   console.log(JSON.stringify({admin_view:true,role_save:true,html_escaping:true,transport_check:true,child_admin_controls_hidden:true,browser_layout_verified:false}));
 })().catch(err=>{console.error(err);process.exitCode=1});

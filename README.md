@@ -1,8 +1,14 @@
-# Family Access Manager 0.1.0
+# Family Access Manager 0.2.0
 
 Erste installierbare Prüfversion einer Benutzerberechtigungsverwaltung für Home Assistant.
 
 **Diese Version ist noch keine umfassende Zugriffssperre für Home Assistant.** Sie prüft die eigenen HTTP- und WebSocket-Funktionen im Backend. Optional sperrt sie direkte Abfragen ausgewählter Lovelace-Dashboard-Konfigurationen für zugeordnete Benutzer. Allgemeine HA-Geräte-APIs, Suche, Verlauf, Kameras, Assist und Drittintegrationen sind noch nicht allgemein abgesichert.
+
+## Oberfläche ab 0.2.0
+
+Die Oberfläche verwendet die lokal mitgelieferten Originalkomponenten von **HA UI Kit 1.2.1** aus `v9h45n47mh-lab/ha-ui-kit`, einschließlich Panel-Kopf, Navigation, Zeilen, Auswahlfeldern, Schaltern, Buttons und Dialogen. Gemeinsame Darstellung und Symbole stammen vollständig aus dem Kit; es gibt keine lokale CSS-Überschreibung. Die Kit-Version ist per Prüfsummen fest gebunden.
+
+Die Umstellung verändert keine Berechtigungsregeln und ergänzt keine Kalenderfunktion. Ein Marketplace-Logo wird im lokalen `brand/`-Verzeichnis mitgeliefert.
 
 ## Enthalten
 
@@ -28,7 +34,7 @@ Das Repository ist als benutzerdefinierte Quelle nutzbar; es ist nicht automatis
 
 ### Manuell über GitHub
 
-Im [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) steht `family_access_manager.zip` als Installationspaket bereit. Das vollständige Quellpaket heißt `Family_Access_Manager_0.1.0_Prototyp.zip`.
+Im [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) steht `family_access_manager.zip` als Installationspaket bereit. Das vollständige Quellpaket heißt `Family_Access_Manager_0.2.0_Prototyp.zip`.
 
 1. ZIP entpacken. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren.
 2. Home Assistant neu starten.

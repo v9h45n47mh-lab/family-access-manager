@@ -1,0 +1,13 @@
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict');
+const root=path.join(__dirname,'../custom_components/family_access_manager/frontend');
+const lock=JSON.parse(fs.readFileSync(path.join(root,'family-ui.lock.json')));
+assert.equal(lock.version,'1.2.1');
+for(const [name,hash] of Object.entries(lock.files))assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'family-ui/1.2.1',name))).digest('hex'),hash,name);
+assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'family-ui/1.2.1/LICENSE'))).digest('hex'),lock.licenseSha256);
+const panel=fs.readFileSync(path.join(root,'panel.js'),'utf8');
+assert(panel.includes("from './family-ui/1.2.1/family-ui.js'"));
+assert.equal(panel.match(/<style>/g).length,1);
+assert(panel.includes('<style>${UI_CSS}</style>'));
+assert(!/#[0-9a-f]{3,8}\b|font-size\s*:|font-weight\s*:|font-family\s*:|\.style\./i.test(panel),'No local style overrides');
+for(const symbol of ['panelHeader','navigation','row','section','selectField','field','toggle','button','iconButton','confirmDialog','bindUI'])assert(new RegExp('\\b'+symbol+'\\b').test(panel),symbol);
+console.log('Verified exact HA UI Kit 1.2.1, license, direct components and absence of local CSS');

@@ -8,11 +8,11 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 ROOT_FILES = {
     "README.md", "CHANGELOG.md", "hacs.json", "package.json", "package-lock.json",
-    "pyproject.toml", "requirements-test.txt", "SHA256SUMS.txt", ".gitignore",
+    "pyproject.toml", "requirements-test.txt", "SHA256SUMS.txt", ".gitignore", "icon.png", "logo.png",
 }
 DIRECTORIES = {"custom_components", "docs", "tests", "scripts", ".github"}
 EXCLUDED = {"__pycache__", ".pytest_cache", "node_modules", ".git", ".venv", "dist"}
-EXTENSIONS = {".py", ".js", ".cjs", ".json", ".toml", ".txt", ".md", ".yml", ".yaml"}
+EXTENSIONS = {".py", ".js", ".cjs", ".json", ".toml", ".txt", ".md", ".yml", ".yaml", ".png", ".svg"}
 
 
 def files():
@@ -22,7 +22,7 @@ def files():
         and not set(p.relative_to(ROOT).parts) & EXCLUDED
         and (
             p.relative_to(ROOT).as_posix() in ROOT_FILES
-            or (p.relative_to(ROOT).parts[0] in DIRECTORIES and p.suffix in EXTENSIONS)
+            or (p.relative_to(ROOT).parts[0] in DIRECTORIES and (p.suffix in EXTENSIONS or p.name == "LICENSE"))
         )
     )
 
