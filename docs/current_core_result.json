@@ -1,0 +1,16 @@
+{
+  "home_assistant": "2026.11.1",
+  "checks": {
+    "installation_and_virtual_switch": true,
+    "unauthenticated_rest_denied": true,
+    "child_cannot_read_admin_configuration": true,
+    "viewer_can_read_but_cannot_control": true,
+    "controller_really_toggles_virtual_switch": true,
+    "rest_and_websocket_share_policy_instance": true,
+    "native_dashboard_gate_on_existing_connection": true,
+    "cloud_adapter_source_points_to_same_runner": true,
+    "clean_unload": true,
+    "policy_persists_across_reload": true
+  },
+  "live_nabu_casa_test": "not_performed"
+}

@@ -1,0 +1,13 @@
+{
+  "domain": "family_access_manager",
+  "name": "Family Access Manager",
+  "version": "0.1.0",
+  "config_flow": true,
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "dependencies": ["http", "frontend", "websocket_api", "lovelace", "panel_custom"],
+  "codeowners": ["@v9h45n47mh-lab"],
+  "documentation": "https://github.com/v9h45n47mh-lab/family-access-manager",
+  "issue_tracker": "https://github.com/v9h45n47mh-lab/family-access-manager/issues",
+  "requirements": []
+}

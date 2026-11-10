@@ -1,0 +1,54 @@
+name: Validate prototype
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ha-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: pip
+      - run: python -m pip install -r requirements-test.txt
+      - run: python -m pytest
+
+  current-core-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: python -m pip install homeassistant==2026.11.1 home-assistant-frontend==20261028.5
+      - name: Test isolated current HA Core
+        env:
+          PYTHONPATH: .
+        run: python tests/smoke_current_core.py
+
+  panel-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run test:panel
+      - run: node --check custom_components/family_access_manager/frontend/panel.js
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: python scripts/build_release.py
+      - name: Check committed source checksums
+        run: git diff --exit-code -- SHA256SUMS.txt

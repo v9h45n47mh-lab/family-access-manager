@@ -1,0 +1,6 @@
+{
+  "config": {
+    "step": {"user": {"title": "Set up Family Access Manager", "description": "This proof of concept adds permission management and guarded test functions. Existing user permissions are unchanged during setup. The optional dashboard configuration gate is enabled later in the panel. General HA device APIs are not yet secured."}},
+    "abort": {"already_configured": "Family Access Manager is already configured."}
+  }
+}
