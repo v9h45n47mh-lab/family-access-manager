@@ -55,7 +55,7 @@ const server=http.createServer((req,res)=>{
   await page.keyboard.press('Escape');assert.equal(await modal.isVisible(),false);assert.equal(await app.getByRole('button',{name:'Neu laden',exact:true}).evaluate(el=>el===el.getRootNode().activeElement),true);
   await app.getByRole('button',{name:'Neu laden',exact:true}).click();await modal.getByRole('button',{name:'Abbrechen',exact:true}).click();assert.equal(await modal.isVisible(),false);
   await app.getByRole('button',{name:'Änderungen speichern',exact:true}).click();await app.getByRole('status').filter({hasText:'Rechte gespeichert'}).waitFor();assert.equal(await page.evaluate(()=>window.fixture.saves.at(-1).roles.family.entities['switch.probe']),'control');
-  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();await app.getByRole('textbox',{name:'Suchen',exact:true}).fill('Licht Paul');assert.equal(await app.locator('#resources .setting-row').count(),1);
+  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();await app.getByRole('searchbox',{name:'Suchen',exact:true}).fill('Licht Paul');assert.equal(await app.locator('#resources .setting-row').count(),1);
   await app.locator('.card-top').getByRole('button',{name:'Prüfen',exact:true}).click();await app.getByRole('button',{name:'HTTP und WebSocket prüfen',exact:true}).click();await app.getByRole('textbox',{name:'Ergebnis',exact:true}).waitFor();assert((await app.getByRole('textbox',{name:'Ergebnis',exact:true}).inputValue()).includes('Dieselbe Prüfinstanz erreicht'));
   await app.getByRole('button',{name:'Testschalter umschalten',exact:true}).click();assert.equal(await page.evaluate(()=>window.fixture.state),'on');
   await page.evaluate(()=>{window.fixture.status.is_admin=false;window.app.hass={...window.fixture.hass,user:{id:'paul'}};});
@@ -63,5 +63,10 @@ const server=http.createServer((req,res)=>{
   await app.getByRole('button',{name:'Testschalter umschalten',exact:true}).click();await app.getByRole('alert').filter({hasText:'Nicht freigegeben'}).waitFor();
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(root,'test-results/validation.json'),JSON.stringify({ui:'1.2.1',variants:results,actions:['user_assignment','controlled_switch','permission_save','search','escaping','native_dialog_escape','cancel_and_focus','http_ws_check','virtual_switch','child_permissions'],consoleErrors:errors},null,2));
   console.log(JSON.stringify({variants:results.length,themes:2,widths:[1100,430,390,375,320],behavior:'passed'}));
+  if(process.env.CI)for(const name of ['users-1100-light.png','users-390-dark.png','roles-1100-dark.png','roles-390-light.png']){
+    const encoded=fs.readFileSync(path.join(root,'test-results',name)).toString('base64'),size=16000,count=Math.ceil(encoded.length/size);
+    console.log('FAM_VISUAL_META '+JSON.stringify({name,chunks:count,length:encoded.length}));
+    for(let i=0;i<count;i++)console.log('FAM_VISUAL_DATA '+name+' '+i+' '+encoded.slice(i*size,(i+1)*size));
+  }
  }catch(err){await page.screenshot({path:path.join(root,'test-results/failure.png'),fullPage:true});throw err;}finally{await browser.close();server.close();}
 })().catch(err=>{console.error(err);process.exitCode=1;server.close();});
