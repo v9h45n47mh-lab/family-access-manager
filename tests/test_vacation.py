@@ -138,3 +138,17 @@ async def test_invalid_vacation_requests_never_change_state(runtime,hass_admin_u
     with pytest.raises((ValueError,TypeError)):
         await runtime.dispatch(hass_admin_user,'set_vacation',value)
     assert runtime.vacation.data==before
+
+
+@pytest.mark.parametrize('central_enabled',[False,True])
+async def test_late_active_household_import_preserves_elapsed_pause_after_central_choice(runtime,freezer,central_enabled):
+    freezer.move_to('2026-11-15T10:00:00Z')
+    v=runtime.vacation
+    await v.set(central_enabled)
+    await v.import_legacy('hausarbeiten_manager',legacy(True,'2026-11-01'))
+    assert v.data['enabled'] is central_enabled
+    assert v.data['started']==('2026-11-15' if central_enabled else None)
+    assert v.data['periods']==[{'start':'2026-11-01','end':'2026-11-14'}]
+    reloaded=Vacation(runtime.hass)
+    await reloaded.load()
+    assert reloaded.data==v.data
