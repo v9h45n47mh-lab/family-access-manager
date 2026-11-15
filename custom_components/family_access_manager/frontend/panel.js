@@ -109,7 +109,7 @@ class FamilyAccessPanel extends HTMLElement {
       }
       if(action === "apply-order") {
         const users=this.snapshot.users;
-        this.showModal('order-dialog','Reihenfolge übernehmen',feedback(this.dirty?'Dabei werden alle vorbereiteten Rollen- und Rechteänderungen gespeichert.':'Übernimmt nur die Reihenfolge. Rollen, Freigaben, Aktivierung, ausgeblendete Einträge und Startseiten bleiben erhalten.')+multiSelect({id:'order-users',label:'Benutzer',items:users.map(u=>({value:u.id,label:u.name,description:u.admin?'Administrator':''})),values:users.filter(u=>this.policy.bindings[u.id]?.includes(this.roleId)).map(u=>u.id)}),button({label:this.dirty?'Speichern und übernehmen':'Übernehmen',action:'confirm-order',variant:'primary'}));return;
+        this.showModal('order-dialog','Reihenfolge übernehmen',feedback(this.dirty?'Dabei werden alle vorbereiteten Rollen- und Rechteänderungen gespeichert.':'Übernimmt nur die Reihenfolge. Rollen, Freigaben, Aktivierung, ausgeblendete Einträge und Startseiten bleiben erhalten.')+multiSelect({id:'order-users',label:'Benutzer',searchLabel:'Benutzer suchen',items:users.map(u=>({value:u.id,label:u.name,description:u.admin?'Administrator':''})),values:users.filter(u=>this.policy.bindings[u.id]?.includes(this.roleId)).map(u=>u.id)}),button({label:this.dirty?'Speichern und übernehmen':'Übernehmen',action:'confirm-order',variant:'primary'}));return;
       }
       if(action === "confirm-order") {
         const ids=this.checkedValues('order-users');if(!ids.length)throw Error('Bitte mindestens einen Benutzer auswählen.');
@@ -126,7 +126,7 @@ class FamilyAccessPanel extends HTMLElement {
         const defaults=this.snapshot.dashboards.map(d=>({value:d.id,label:d.name}));
         if(!defaults.some(d=>d.value===data.default_panel))defaults.unshift({value:data.default_panel,label:data.default_panel==='home'?'HA-Startseite':data.default_panel});
         if(!defaults.some(d=>d.value==='profile'))defaults.push({value:'profile',label:'Eigenes Profil'});
-        this.showModal('admin-sidebar-dialog','Dashboards für '+user.name,feedback('Nur die Seitenleiste dieses Administrators wird angepasst. Der volle Zugriff bleibt erhalten. Die gewählte Startseite muss sichtbar bleiben.')+multiSelect({id:'admin-dashboards',label:'Sichtbare Dashboards',items:this.snapshot.dashboards.map(d=>({value:d.id,label:d.name,description:d.id})),values:data.visible_dashboards})+kitSelect({id:'admin-default',label:'Startseite',value:data.default_panel,options:defaults}),button({label:'Seitenleiste speichern',action:'confirm-admin-sidebar',variant:'primary'}));return;
+        this.showModal('admin-sidebar-dialog','Dashboards für '+user.name,feedback('Nur die Seitenleiste dieses Administrators wird angepasst. Der volle Zugriff bleibt erhalten. Die gewählte Startseite muss sichtbar bleiben.')+multiSelect({id:'admin-dashboards',label:'Sichtbare Dashboards',searchLabel:'Dashboards suchen',items:this.snapshot.dashboards.map(d=>({value:d.id,label:d.name,description:d.id})),values:data.visible_dashboards})+kitSelect({id:'admin-default',label:'Startseite',value:data.default_panel,options:defaults}),button({label:'Seitenleiste speichern',action:'confirm-admin-sidebar',variant:'primary'}));return;
       }
       if(action === "confirm-admin-sidebar") {
         const visible=this.checkedValues('admin-dashboards'),defaultPanel=this.shadowRoot.getElementById('admin-default').value;
