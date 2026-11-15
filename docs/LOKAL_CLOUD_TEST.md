@@ -1,62 +1,40 @@
-# Prüfung auf deiner HA-Instanz
-
-Ziel: dieselben erwarteten Erlaubnisse und Ablehnungen lokal und über Nabu Casa bestätigen. Für diese Prüfung wird der virtuelle Testschalter verwendet.
+# Dashboardfreigaben lokal und über Nabu Casa prüfen
 
 ## Vorbereitung
 
-1. Integration gemäß README installieren.
-2. Als Administrator eine Rolle „Zugriffstest“ anlegen.
-3. Genau ein Dashboard freigeben und den Testschalter zunächst nur zum Anzeigen erlauben.
-4. Unter **Benutzer** die Rolle einem normalen Testkonto zuordnen und **Family Access für dieses Konto einschalten**. Das Konto darf kein HA-Administrator und nicht der Eigentümer sein.
-5. Speichern. Optional die native Dashboard-Konfigurationssperre einschalten.
-6. Testkonto in einem separaten Browserprofil oder privaten Fenster anmelden.
+1. Als Administrator eine Rolle „Zugriffstest“ anlegen.
+2. Ein Dashboard auf **Freigegeben**, die übrigen auf **Kein Zugriff** setzen.
+3. Unter **Benutzer** beim Testkonto Family Access einschalten, die Rolle wählen und speichern. Das Testkonto darf kein HA-Administrator und nicht der Eigentümer sein.
+4. **Dashboard-Konfigurationen sperren** einschalten und speichern.
+5. Mit dem Testkonto in einem separaten Browserprofil anmelden. Nach einem Update HA neu starten und den Testbrowser vollständig neu laden.
 
 ## Erwartete Ergebnisse
 
 | Prüfung | Erwartung | Lokal | Nabu Casa |
 |---|---|---|---|
-| Seitenleiste des aktivierten Testkontos | Nur freigegebene Dashboards, Family Access und Kontobestandteile; keine anderen allgemeinen Panels | Offen | Offen |
-| Family Access öffnen | Nur Prüfen und Umfang; keine Benutzer-/Rollenverwaltung | Offen | Offen |
-| HTTP und WebSocket prüfen | Beide erreichen dieselbe Prüfinstanz | Offen | Offen |
-| Testschalter anzeigen | Erlaubt | Offen | Offen |
-| Testschalter umschalten bei „Anzeigen“ | Abgelehnt; Zustand unverändert | Offen | Offen |
-| Freigegebenes Dashboard über Family Access abrufen | Erlaubt | Offen | Offen |
-| Nicht freigegebenes Dashboard direkt neu öffnen, Sperre eingeschaltet | Konfigurationsabfrage abgelehnt | Offen | Offen |
-| Testschalter auf „Bedienen“ ändern, dann umschalten | Erlaubt; virtueller Zustand wechselt | Offen | Offen |
-| Rolle bei offener Verbindung auf „Kein Zugriff“ ändern, erneut abfragen | Neue Anfrage abgelehnt | Offen | Offen |
-| Family Access für das Testkonto ausschalten und speichern | Rolle bleibt gespeichert; native Dashboard-Sperre gilt für dieses Konto nicht mehr, eigene Gerätefunktionen verweigern ohne Aktivierung | Offen | Offen |
-| Family Access wieder einschalten und speichern | Gespeicherte Rolle gilt bei der nächsten Anfrage wieder | Offen | Offen |
-| Zweites normales Konto ohne Aktivierung verwenden | Native Dashboard-Konfigurationsabfragen werden durch Family Access nicht eingeschränkt | Offen | Offen |
-| Dashboardfreigabe bei offenem Browser ändern und speichern | Seitenleisteneinträge aktualisieren sich; Administratoransicht unverändert | Offen | Offen |
-| Als Administrator weiterarbeiten | Vollzugriff bleibt erhalten | Offen | Offen |
+| Seitenleiste | Nur freigegebene Dashboards, Family Access und feste Konto-/Benachrichtigungselemente | Offen | Offen |
+| Freigegebenes Dashboard öffnen | Anzeige möglich; Bedienung folgt den nativen HA-Rechten | Offen | Offen |
+| Family Access öffnen | Nur Prüfen und Umfang, keine Verwaltung und kein Fehlerprotokoll | Offen | Offen |
+| HTTP und WebSocket prüfen | Dieselbe Prüfinstanz erreicht | Offen | Offen |
+| Nicht freigegebene Konfiguration direkt per WebSocket abfragen | Abgelehnt; als Administrator Fehler mit Benutzer, Ziel und Grund sichtbar | Offen | Offen |
+| Freigabe bei offenem Browser ändern und speichern | Seitenleiste aktualisiert sich; neue Konfigurationsanfrage verwendet aktuelle Rechte | Offen | Offen |
+| Family Access ausschalten und speichern | Rolle erhalten, native Panelliste wiederhergestellt | Offen | Offen |
+| Normales Konto ruft Fehlerprotokoll-API auf | Abgelehnt; kein fremder Protokollinhalt | Offen | Offen |
+| HA neu starten | Gespeicherte Rollen, Aktivierungen und letzte Fehler vorhanden | Offen | Offen |
+| Administrator weiterverwenden | Vollzugriff und native Administratorprüfungen unverändert | Offen | Offen |
 
-Für die Cloudprüfung ausdrücklich die **Nabu-Casa-Adresse** verwenden. In der Companion-App kann eine interne URL automatisch bevorzugt werden. Der Test zeigt die aufrufende Adresse an; eine allgemeine Erfolgsmeldung im Heimnetz beweist noch keinen Cloudzugriff.
-
-Ein neuer Aufruf desselben Tabs kann zwischengespeicherte Dashboardinhalte verwenden. Für den direkten Dashboardtest einmal vollständig neu laden beziehungsweise ein frisches Fenster verwenden. Bereits an den Browser übermittelte Inhalte lassen sich nachträglich nicht zurückholen.
-
-## Direkte WebSocket-Aufrufe
-
-Die folgenden Nachrichten dienen zum Prüfen mit einer bereits authentifizierten Verbindung. Die Integration übernimmt die Identität aus der Verbindung und akzeptiert keinen frei wählbaren Benutzer. IDs müssen innerhalb der Verbindung ansteigen.
+Eine nicht verfügbare Frontendroute kann schon vor einer Serveranfrage abgewiesen werden. Das allein erzeugt keinen protokollierten Backend-Berechtigungsfehler. Für einen eindeutigen Ablehnungstest die native Konfiguration mit authentifiziertem WebSocket abfragen:
 
 ```json
-{"id":1,"type":"family_access_manager/request","action":"status"}
+{"id":1,"type":"lovelace/config","url_path":"DEIN_NICHT_FREIGEGEBENES_DASHBOARD"}
 ```
+
+Administratoren können das Fehlerprotokoll direkt abrufen:
 
 ```json
-{"id":2,"type":"family_access_manager/request","action":"read_entity","payload":{"entity_id":"switch.DEINE_TESTENTITAET"}}
+{"id":2,"type":"family_access_manager/request","action":"admin_error_log"}
 ```
 
-```json
-{"id":3,"type":"family_access_manager/request","action":"call_service","payload":{"domain":"switch","service":"toggle","entity_ids":["switch.DEINE_TESTENTITAET"],"data":{}}}
-```
+IDs innerhalb einer Verbindung müssen ansteigen. Identität und Administratorrechte stammen aus der HA-Verbindung. Niemals Tokens in Screenshots oder Rückmeldungen kopieren.
 
-```json
-{"id":4,"type":"lovelace/config","url_path":"DEIN_NICHT_FREIGEGEBENES_DASHBOARD"}
-```
-
-Für direkte HTTP-Tests lautet die Route `POST /api/family_access_manager/request`. Der JSON-Body enthält genau `action` und `payload`; die Authentifizierung erfolgt wie bei anderen HA-REST-Anfragen. Tokens niemals in Screenshots, Rückmeldungen oder Testprotokolle kopieren.
-
-## Erwartete Grenze
-
-Ein nativer Geräteaufruf kann in dieser Version weiterhin funktionieren, obwohl die Family-Access-API ihn verweigert. Dieser bekannte Unterschied darf nicht als bestandener vollständiger Zugriffsschutz gewertet werden. Die nächste Stufe muss diese alternativen Wege absichern.
-
+Für die Cloudprüfung ausdrücklich die Nabu-Casa-Adresse verwenden; eine Erfolgsmeldung im Heimnetz beweist keinen Cloudzugriff. Bereits im Browser geladene Inhalte können zwischengespeichert sein und werden nicht nachträglich zurückgeholt. Dieser Ablauf prüft Dashboardzugriff, keine zusätzliche Geräte- oder allgemeine HA-Systemberechtigung.

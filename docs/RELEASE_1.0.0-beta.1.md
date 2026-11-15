@@ -9,6 +9,8 @@ Family Access Manager **1.0.0-beta.1** konzentriert sich auf Benutzerrollen und 
 
 Versionierung künftig nach SemVer: Vorabstände `1.0.0-beta.1`, `1.0.0-beta.2` usw.; regulär Korrekturen als Patch, Erweiterungen als Minor und inkompatible Änderungen als Major.
 
+Geprüft mit **79 HA-Tests, 20 aktuellen Core-Prüfungen und 50 Browservarianten** für Desktop/Mobil und helle/dunkle Themes. Zusätzlich Protokollzugriff, Persistenz, Datenschutz und Altfreigaben geprüft. Details: [Prüfergebnisse](https://github.com/v9h45n47mh-lab/family-access-manager/blob/v1.0.0-beta.1/docs/TESTERGEBNISSE.md).
+
 Die Version ist weiterhin eine Vorabversion. Ihr Umfang sind Dashboardzugriff und Navigation; die nativen HA-Geräte- und Systemrechte bleiben bestehen. Bereits geladene Dashboardinhalte lassen sich nicht zurückholen.
 
 Nach dem Update Home Assistant neu starten und den Browser vollständig neu laden. Administratoren finden die Diagnose unter **Family Access → Fehler**. Vorabversionen in Marketplace/HACS gegebenenfalls einblenden.

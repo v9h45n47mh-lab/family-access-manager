@@ -7,7 +7,7 @@ vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family
 vm.runInContext('const esc=escapeHtml;',context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family_access_manager/frontend/panel.js'),'utf8').replace(/^import[^\n]*\n/,''),context);
 const panel=window.document.querySelector('family-access-panel');
-const policy={revision:0,native_dashboard_gate:false,device_control:false,roles:{family:{name:'Kinder',dashboards:{'dashboard-paul':'view'},entities:{},areas:{},labels:{}}},bindings:{paul:['family']},enabled_users:['paul']};
+const policy={revision:0,native_dashboard_gate:false,device_control:false,roles:{family:{name:'Kinder',dashboards:{'dashboard-paul':'control'},entities:{},areas:{},labels:{}}},bindings:{paul:['family']},enabled_users:['paul']};
 const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.0.0-beta.1',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
 const snapshot={policy,users:[{id:'manuel',name:'Manuel',admin:true,active:true},{id:'paul',name:'Paul',admin:false,active:true}],dashboards:[{id:'dashboard-paul',name:'Paul'}],entities:[{id:'switch.probe',name:'Testschalter'},{id:'light.paul',name:'<img src=x onerror=alert(1)>'}],areas:[],labels:[],events:[]};
 snapshot.dashboards.push({id:'dashboard-unsafe',name:'<img src=x onerror=alert(1)>'});
@@ -43,6 +43,8 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   click('[data-action="navigate"][data-page="roles"]');
   assert.equal(panel.shadowRoot.querySelectorAll('img').length,0,'Dashboard names must be escaped');
   const select=panel.shadowRoot.querySelector('[data-grant="dashboard-paul"]');
+  assert.equal(select.value,'view','Legacy control grants display as released dashboards');
+  assert.equal(panel.policy.roles.family.dashboards['dashboard-paul'],'control','Rendering does not change stored legacy rights');
   for(const option of select.querySelectorAll('option')) option.selected=option.value==='none';
   select.dispatchEvent(new window.Event('change',{bubbles:true}));
   assert.equal(panel.policy.roles.family.dashboards['dashboard-paul'],undefined);
