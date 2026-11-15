@@ -170,14 +170,14 @@ def default_app_roles():
 
 
 def default_policy():
-    return {**_legacy_default_policy(), 'app_roles': default_app_roles(), 'app_bindings': {}}
+    return {**_legacy_default_policy(), 'app_roles': default_app_roles(), 'app_bindings': {}, 'admin_presentations': {}}
 
 
 def validate_policy(raw):
     """New API writes must explicitly separate presentation and application roles."""
-    if type(raw) is not dict or not {'app_roles', 'app_bindings'} <= raw.keys():
+    if type(raw) is not dict or not {'app_roles', 'app_bindings', 'admin_presentations'} <= raw.keys():
         raise InvalidPolicy('Darstellungen und App-Rollen müssen getrennt angegeben werden. Bitte neu laden.')
-    checked = _validate_legacy_policy({k: v for k, v in raw.items() if k not in ('app_roles', 'app_bindings')})
+    checked = _validate_legacy_policy({k: v for k, v in raw.items() if k not in ('app_roles', 'app_bindings', 'admin_presentations')})
     if any(role['applications'] for role in checked['roles'].values()):
         raise InvalidPolicy('Darstellungen dürfen keine App-Rechte enthalten.')
     roles, bindings = raw['app_roles'], raw['app_bindings']
@@ -200,18 +200,27 @@ def validate_policy(raw):
             or any(not isinstance(rid, str) or rid not in roles for rid in assigned)
             or len(assigned) != len(set(assigned))):
             raise InvalidPolicy('Eine App-Rollenzuordnung ist ungültig.')
+    admin_presentations = raw['admin_presentations']
+    if (type(admin_presentations) is not dict or len(admin_presentations) > 500
+        or any(not isinstance(uid, str) or not 1 <= len(uid) <= 160
+               or not isinstance(rid, str) or rid not in checked['roles']
+               for uid, rid in admin_presentations.items())):
+        raise InvalidPolicy('Ungültige Darstellungszuordnung für Administratoren.')
     if len(json.dumps(raw).encode()) > 250_000:
         raise InvalidPolicy('Die Rechtekonfiguration ist zu groß.')
-    return {**checked, 'app_roles': deepcopy(roles), 'app_bindings': deepcopy(bindings)}
+    return {**checked, 'app_roles': deepcopy(roles), 'app_bindings': deepcopy(bindings), 'admin_presentations': deepcopy(admin_presentations)}
 
 
 def migrate_policy(raw):
     """Split stored mixed roles once; preserve effective rights and explicit denial."""
+    admin_presentations = deepcopy(raw.get('admin_presentations', {})) if type(raw) is dict else {}
+    if type(raw) is dict:
+        raw = {k: v for k, v in raw.items() if k != 'admin_presentations'}
     if type(raw) is dict and ('app_roles' in raw or 'app_bindings' in raw):
-        base = _migrate_legacy_policy({k: v for k, v in raw.items() if k not in ('app_roles', 'app_bindings')})
-        return validate_policy({**base, **{k: v for k, v in raw.items() if k in ('app_roles', 'app_bindings')}})
+        base = _migrate_legacy_policy({k: v for k, v in raw.items() if k not in ('app_roles', 'app_bindings', 'admin_presentations')})
+        return validate_policy({**base, **{k: v for k, v in raw.items() if k in ('app_roles', 'app_bindings')}, 'admin_presentations': admin_presentations})
     legacy = _migrate_legacy_policy(raw)
-    result = {**deepcopy(legacy), 'app_roles': default_app_roles(), 'app_bindings': {}}
+    result = {**deepcopy(legacy), 'app_roles': default_app_roles(), 'app_bindings': {}, 'admin_presentations': admin_presentations}
     def normalized(apps):
         return {app: {key: bool(grants.get(key, False)) for key in APPLICATIONS[app]['permissions']}
                 for app, grants in apps.items()}
@@ -263,6 +272,24 @@ class Policy:
         if not user.is_active or not self.managed(user):
             return []
         return [self.config["roles"][r] for r in self.config["bindings"].get(user.id, [])]
+
+    def presentation_managed(self, user: Principal) -> bool:
+        if not user.is_active:
+            return False
+        if self.privileged(user):
+            return user.id in self.config['admin_presentations']
+        return self.managed(user)
+
+    def presentation_roles(self, user: Principal) -> list[dict]:
+        if not self.presentation_managed(user):
+            return []
+        if self.privileged(user):
+            return [self.config['roles'][self.config['admin_presentations'][user.id]]]
+        return self.roles(user)
+
+    def presentation_dashboard(self, user: Principal, path: str) -> bool:
+        return any(LEVELS[role['dashboards'].get(path, 'none')] > 0
+                   for role in self.presentation_roles(user))
 
     def dashboard(self, user: Principal, path: str, level: str = "view") -> bool:
         if level not in LEVELS or level == "none" or not user.is_active:

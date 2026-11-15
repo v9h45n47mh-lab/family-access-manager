@@ -78,10 +78,10 @@ async def main():
             base = f"http://127.0.0.1:{port}"
             headers = {"Authorization": "Bearer " + token}
             async with ClientSession() as session:
-                async with session.get(base + "/family_access_manager_frontend/family-ui/1.6.0/family-ui.js") as response:
+                async with session.get(base + "/family_access_manager_frontend/family-ui/1.7.0/family-ui.js") as response:
                     assert response.status == 200
                     assert "javascript" in response.headers.get("Content-Type", "")
-                    assert 'UI_VERSION = "1.6.0"' in await response.text()
+                    assert 'UI_VERSION = "1.7.0"' in await response.text()
                 results["checks"]["vendored_kit_module_served_with_correct_mime"] = True
                 async with session.get(base + "/api/brands/marketplace/family_access_manager/icon.png", headers=headers) as response:
                     assert response.status == 200

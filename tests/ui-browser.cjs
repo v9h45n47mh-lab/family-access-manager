@@ -10,9 +10,9 @@ snapshot.applications=[{"id": "light_manager", "name": "Light Manager", "permiss
 snapshot.dashboards.push({id:'dashboard-long-name',name:'LangeDashboardbezeichnungOhneLeerzeichenDieAufDemHandyUmgebrochenWerdenMuss'},{id:'dashboard-unsafe',name:'<img src=x onerror=alert(1)>'});
 snapshot.error_log=[{time:'2026-11-15T10:00:00Z',user_id:'paul',user_name:'Paul',operation:'read_dashboard',target:'dashboard-parents',reason:'Die Rolle enthält keine Freigabe für dieses Dashboard.',source:'websocket',kind:'denied'}];
 snapshot.error_log.push({...snapshot.error_log[0],user_name:'<img src=x onerror=alert(1)>',reason:'<img src=x onerror=alert(1)> Lange Diagnose für einen sicheren Umbruch auf Mobilgeräten'});
-policy.app_roles={admin:{name:'Admin',applications:{}},user:{name:'Benutzer',applications:{}},unused:{name:'Unbenutzte Rolle',applications:{}}};policy.app_bindings={paul:['user'],test:['user']};
+policy.admin_presentations={};policy.app_roles={admin:{name:'Admin',applications:{}},user:{name:'Benutzer',applications:{}},unused:{name:'Unbenutzte Rolle',applications:{}}};policy.app_bindings={paul:['user'],test:['user']};
 policy.roles.paul_display={name:'Paul',dashboard_order:[],applications:{},dashboards:{'dashboard-paul':'view'},entities:{},areas:{},labels:{}};policy.bindings.paul=['paul_display'];
-const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.3.1',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
+const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.4.0',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
 window.fixture={snapshot,status,saves:[],calls:[],state:'off',vacationListeners:new Set(),vacationSaves:[]};
 window.fixture.externalVacation=enabled=>{snapshot.vacation={...snapshot.vacation,enabled,revision:snapshot.vacation.revision+1};for(const listener of window.fixture.vacationListeners)listener({});};
 const hass={user:{id:'manuel'},connection:{async subscribeEvents(cb,type){if(type!=='family_access_vacation_updated')throw Error(type);window.fixture.vacationListeners.add(cb);return()=>window.fixture.vacationListeners.delete(cb);}},callWS:async msg=>{window.fixture.calls.push(msg.action);if(msg.action==='admin_panel_status'){if(!status.is_admin)throw Object.assign(new Error('Nur Administratoren'),{code:'unauthorized'});return structuredClone(status);}if(msg.action==='status')return structuredClone(status);if(msg.action==='admin_snapshot'){if(!status.is_admin)throw Error('Nicht freigegeben');return structuredClone(snapshot);}if(msg.action==='vacation_status')return structuredClone(snapshot.vacation);if(msg.action==='set_vacation'){window.fixture.vacationSaves.push(msg.payload);window.fixture.externalVacation(msg.payload.enabled);return structuredClone(snapshot.vacation);}if(msg.action==='admin_sidebar')return {user_id:msg.payload.user_id,token:'fixture-token',visible_dashboards:snapshot.dashboards.map(d=>d.id),default_panel:'dashboard-paul'};if(msg.action==='save_admin_sidebar'){window.fixture.adminSave=structuredClone(msg.payload);return msg.payload;}if(msg.action==='apply_dashboard_order'){window.fixture.orderApply=structuredClone(msg.payload);return {applied:msg.payload.user_ids,failed:[]};}if(msg.action==='save_policy'){if(!status.is_admin)throw Error('Nicht freigegeben');snapshot.policy=structuredClone(msg.payload);snapshot.policy.revision++;window.fixture.saves.push(structuredClone(msg.payload));for(const u of snapshot.users.filter(u=>u.admin)){delete snapshot.policy.bindings[u.id];snapshot.policy.enabled_users=snapshot.policy.enabled_users.filter(id=>id!==u.id);}return {revision:snapshot.policy.revision,policy:structuredClone(snapshot.policy)};}if(msg.action==='read_entity')return {state:window.fixture.state};if(msg.action==='call_service'){if(!status.is_admin)throw Error('Nicht freigegeben');window.fixture.state=window.fixture.state==='off'?'on':'off';return {executed:true};}if(msg.action==='admin_error_log'){if(!status.is_admin)throw Error('Nicht freigegeben');return {events:structuredClone(snapshot.error_log),limit:200};}if(msg.action==='read_dashboard'){if(!status.is_admin)throw Error('Nicht freigegeben');return {views:[]};}throw Error('Unknown action');},callApi:async()=>({result:structuredClone(status)})};
@@ -53,7 +53,7 @@ const server=http.createServer((req,res)=>{
     const bad=await app.evaluate(el=>[...el.shadowRoot.querySelectorAll('.setting-row,.grid,.card-top,.fui-panel-header')].filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>[n.className,n.scrollWidth,n.clientWidth]));
     assert.deepEqual(bad,[],'No control overflow: '+[width,theme,id]);
     const compared=await page.evaluate(async({base,id})=>{
-     const kit=await import(base+'family-ui/1.6.0/family-ui.js'),ref=document.createElement('div');ref.attachShadow({mode:'open'});document.body.append(ref);
+     const kit=await import(base+'family-ui/1.7.0/family-ui.js'),ref=document.createElement('div');ref.attachShadow({mode:'open'});document.body.append(ref);
      ref.shadowRoot.innerHTML='<style>'+kit.UI_CSS+'</style><div class="ui-card">'+kit.panelHeader({title:'Family Access'})+kit.navigation({label:'Family Access',items:[{id:'users',label:'Benutzer'},{id:'dashboards',label:'Dashboards'},{id:'roles',label:'Rollenverwaltung'},{id:'errors',label:'Fehler'}],active:id,help:false,settingsLabel:'Einstellungen'})+'<main>'+kit.section({id:'ref',title:'Benutzer',content:kit.row({title:'Paul',description:'Benutzer',trailing:kit.toggle({label:'Schalter',action:'noop',checked:document.querySelector('family-access-panel').shadowRoot.querySelector('[role="switch"]')?.getAttribute('aria-checked')==='true'})})+kit.selectField({id:'ref-select',label:'Rolle',value:'none',options:[{value:'none',label:'Kein Zugriff'}]})})+'<div id="user-reference">'+kit.userAccessRow({id:'reference',title:'Paul',description:'Eingeschränkt',value:'family',options:[{value:'family',label:'Maximilian'}],enabled:true})+kit.row({title:'Next'})+'</div></main></div>';
      const actual=document.querySelector('family-access-panel').shadowRoot,pairs=[['.fui-panel-header',['padding','gap','minHeight','backgroundColor']],['.fui-panel-header strong',['fontFamily','fontSize','fontWeight']],['nav button',['padding','fontSize','fontWeight','color']],['main',['padding']],['.settings-fold span',['fontSize','fontWeight']],['.row-text strong',['fontSize','fontWeight','lineHeight']],['.row-text small',['fontSize','color']],['select',['padding','borderRadius','fontSize','color','backgroundColor']],['.switch-track',['width','height','backgroundColor']],['.switch-thumb',['width','height']],['button.primary',['backgroundColor','color','borderRadius','padding','fontSize']]];
      const user=actual.querySelector('[data-access-user="paul"]'),userRef=ref.shadowRoot.querySelector('[data-access-user="reference"]');
@@ -166,7 +166,8 @@ const server=http.createServer((req,res)=>{
   assert.equal(await app.locator('#unchosen-dashboards-content [data-action="move-dashboard"]').count(),0,'Unchosen dashboards have no sort controls');
   await page.evaluate(()=>{window.app.policy.bindings.manuel=['family'];window.app.policy.enabled_users.push('manuel');});
   const beforeOrder=await page.evaluate(()=>window.app.selectedDashboards().map(d=>d.id));
-  await app.locator('[data-action="move-dashboard"][data-direction="1"]').first().click();
+  const sort=app.locator('[data-action="move-dashboard"][data-ui="order"]'),from=await sort.first().boundingBox(),to=await sort.nth(1).boundingBox();
+  await page.mouse.move(from.x+from.width/2,from.y+from.height/2);await page.mouse.down();await page.waitForTimeout(230);await page.mouse.move(to.x+to.width/2,to.y+to.height/2,{steps:8});await page.mouse.up();
   const afterOrder=await page.evaluate(()=>window.app.selectedDashboards().map(d=>d.id));
   assert.equal(afterOrder[1],beforeOrder[0]);assert.equal(afterOrder[0],beforeOrder[1]);
   await app.getByRole('button',{name:'Reihenfolge übernehmen',exact:true}).click();
@@ -179,6 +180,19 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.evaluate(()=>window.app.policy.bindings.manuel),undefined,'Use canonical policy after removing stale admin assignments');
   assert.deepEqual(await page.evaluate(()=>window.fixture.saves.at(-1).roles.family.dashboard_order),afterOrder);
   await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).click();
+  await app.getByRole('button',{name:'Darstellung für Manuel',exact:true}).click();
+  const adminProfile=app.getByRole('dialog',{name:'Darstellung für Manuel',exact:true});
+  assert.equal(await adminProfile.getByText('App-Rollen',{exact:true}).count(),0);
+  for(const width of [320,390,1100])for(const dark of [false,true]){
+    await page.setViewportSize({width,height:1000});
+    await page.evaluate(dark=>document.body.classList.toggle('dark',dark),dark);
+    assert.equal(await adminProfile.evaluate(el=>el.scrollWidth>el.clientWidth),false);
+    await page.screenshot({path:path.join(root,'test-results/admin-presentation-'+width+'-'+(dark?'dark':'light')+'.png'),fullPage:true});
+  }
+  await adminProfile.getByRole('combobox',{name:'Darstellung',exact:true}).selectOption('family');
+  await adminProfile.getByRole('button',{name:'Übernehmen',exact:true}).click();
+  assert.equal(await page.evaluate(()=>window.app.policy.admin_presentations.manuel),'family');
+  assert.equal(await page.evaluate(()=>window.app.policy.app_bindings.manuel),undefined);
   await app.getByRole('button',{name:'Dashboards für Manuel',exact:true}).click();
   const adminModal=app.getByRole('dialog',{name:'Dashboards für Manuel',exact:true});
   await adminModal.locator('input[value="dashboard-paul"]').uncheck();
@@ -189,9 +203,9 @@ const server=http.createServer((req,res)=>{
   await app.getByRole('status').filter({hasText:'Admin-Seitenleiste gespeichert'}).waitFor();
   await app.locator('.card-top').getByRole('button',{name:'Einstellungen',exact:true}).click();
   assert.equal(await app.locator('#versions-content').isVisible(),true);
-  assert((await app.locator('#versions-content').textContent()).includes('Oberfläche 1.3.1'));
-  assert((await app.locator('#versions-content').textContent()).includes('Integration 1.3.1'));
-  assert((await app.locator('#versions-content').textContent()).includes('UI 1.6.0'));
+  assert((await app.locator('#versions-content').textContent()).includes('Oberfläche 1.4.0'));
+  assert((await app.locator('#versions-content').textContent()).includes('Integration 1.4.0'));
+  assert((await app.locator('#versions-content').textContent()).includes('UI 1.7.0'));
   await app.locator('.card-top').getByRole('button',{name:'Rollenverwaltung',exact:true}).click();
   await app.getByRole('combobox',{name:'App-Rolle',exact:true}).selectOption('unused');
   await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();
@@ -210,7 +224,7 @@ const server=http.createServer((req,res)=>{
   assert.equal(await app.locator('[data-action="save"]').count(),0);
   assert.equal(await app.locator('[data-access-user]').count(),0);
   assert.equal(await page.evaluate(()=>window.app.snapshot),null);
-  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(root,'test-results/validation.json'),JSON.stringify({ui:'1.6.0',variants:results,actions:['central_vacation_persist','vacation_live_update','independent_policy_draft','separate_role_management','dashboard_grants_and_order','user_activation','user_assignment','controlled_switch','permission_save','search','escaping','native_dialog_escape','cancel_and_focus','http_ws_check','dashboard_read','admin_error_protocol','restricted_panel_denied'],consoleErrors:errors},null,2));
+  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(root,'test-results/validation.json'),JSON.stringify({ui:'1.7.0',variants:results,actions:['central_vacation_persist','vacation_live_update','independent_policy_draft','separate_role_management','dashboard_grants_and_order','user_activation','user_assignment','controlled_switch','permission_save','search','escaping','native_dialog_escape','cancel_and_focus','http_ws_check','dashboard_read','admin_error_protocol','restricted_panel_denied'],consoleErrors:errors},null,2));
   console.log(JSON.stringify({variants:results.length,themes:2,widths:[1100,430,390,375,320],behavior:'passed'}));
   if(process.env.CI)for(const name of ['users-1100-light.png','users-390-dark.png','dashboards-1100-dark.png','dashboards-390-light.png','roles-1100-dark.png','roles-390-light.png','admin-dialog-390-light.png','order-dialog-390-light.png','delete-dialog-390-light.png','settings-390-dark.png']){
     const encoded=fs.readFileSync(path.join(root,'test-results',name)).toString('base64'),size=16000,count=Math.ceil(encoded.length/size);
