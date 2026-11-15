@@ -9,6 +9,7 @@ from homeassistant.const import Platform
 from .api import RequestView, websocket_request
 from .const import DOMAIN, PANEL_PATH, VERSION
 from .runtime import Runtime
+from .applications import APPLICATION_CLIENTS
 
 
 async def async_setup_entry(hass, entry):
@@ -16,6 +17,8 @@ async def async_setup_entry(hass, entry):
     await runtime.load()
     hass.data[DOMAIN] = runtime
     try:
+        for application, client in hass.data.get(APPLICATION_CLIENTS, {}).items():
+            await runtime.import_application(application, client['legacy'])
         if not hass.data.get(f"{DOMAIN}_registered"):
             hass.http.register_view(RequestView())
             websocket_api.async_register_command(hass, websocket_request)
@@ -55,6 +58,7 @@ async def async_unload_entry(hass, entry):
     if not await hass.config_entries.async_unload_platforms(entry, [Platform.SWITCH]):
         return False
     runtime = hass.data.pop(DOMAIN)
+    hass.bus.async_fire('family_access_manager_updated',{})
     await runtime.error_log.flush()
     runtime.dashboard_list.uninstall()
     runtime.sidebar.uninstall()

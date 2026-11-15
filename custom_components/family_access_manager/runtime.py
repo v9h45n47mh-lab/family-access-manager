@@ -5,6 +5,10 @@ from collections import deque
 from copy import deepcopy
 from datetime import UTC, datetime
 import uuid
+import hashlib
+import json
+
+from .applications import APPLICATIONS, APPLICATION_PROTOCOL, APPLICATION_CLIENTS, APPLICATION_EVENT
 
 from homeassistant.core import Context
 from homeassistant.const import EVENT_PANELS_UPDATED
@@ -33,6 +37,8 @@ class Conflict(Exception):
 
 
 class Runtime:
+    application_protocol = APPLICATION_PROTOCOL
+
     def __init__(self, hass):
         self.hass = hass
         self.store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
@@ -177,6 +183,7 @@ class Runtime:
                 "dashboards": self.dashboard_catalog(),
                 "events": list(self.events),
                 "error_log": self.error_log.snapshot(),
+                "applications": [{"id":app, **descriptor, "connected": app in self.hass.data.get(APPLICATION_CLIENTS,{})} for app,descriptor in APPLICATIONS.items()],
             }
         if action == "save_policy":
             self.require_admin(user)
@@ -209,6 +216,7 @@ class Runtime:
                 self.policy = next_policy
             # HA's panel collection refetches get_panels for each connection.
             self.hass.bus.async_fire(EVENT_PANELS_UPDATED)
+            self.hass.bus.async_fire(APPLICATION_EVENT, {"revision": self.policy.config["revision"]})
             self.audit(user.id, "save_policy", "configuration", True)
             return {"revision": self.policy.config["revision"], "policy": deepcopy(self.policy.config)}
         if action == "read_entity":
@@ -308,3 +316,45 @@ class Runtime:
                     self.audit(actor.id, action, uid, True)
             return {"applied": applied, "failed": failed}
 
+
+    def application_permissions(self, user, application):
+        return self.policy.application_permissions(principal(user), application)
+
+    def application_denied(self, user, application, permission):
+        self.error_log.record(user, application+'/'+permission, application,
+                              'Die zugewiesenen Rollen enthalten diese Anwendungsfreigabe nicht.', source='application')
+
+    async def import_application(self, application, legacy):
+        if application not in APPLICATIONS:
+            raise ValueError('Unbekannte Anwendung.')
+        async with self.lock:
+            if application in self.policy.config['imported_applications']:
+                return
+            candidate = deepcopy(self.policy.config)
+            keys = APPLICATIONS[application]['permissions']
+            for user in await self.hass.auth.async_get_users():
+                if user.system_generated or not user.is_active or user.is_admin or user.is_owner:
+                    continue
+                assigned = candidate['bindings'].get(user.id, [])
+                if any(application in candidate['roles'][rid]['applications'] for rid in assigned):
+                    continue
+                raw = legacy(user)
+                grants = {key: True for key in keys if raw.get(key, False) is True}
+                if not grants:
+                    continue
+                digest = hashlib.sha256(json.dumps(grants,sort_keys=True).encode()).hexdigest()[:10]
+                rid = 'import_'+application+'_'+digest
+                if rid not in candidate['roles']:
+                    management = any(grants.get(key) for key in ('manage','settings','manage_catalog','delete_others','edit_others','confirm_any','alarms_others'))
+                    label = 'Verwaltung' if management else 'Benutzer'
+                    candidate['roles'][rid] = {'name':APPLICATIONS[application]['name']+' · '+label+' (übernommen)',
+                        'dashboard_order':[], 'applications':{application:grants},
+                        'dashboards':{},'entities':{},'areas':{},'labels':{}}
+                candidate['bindings'].setdefault(user.id,[]).append(rid)
+            candidate['imported_applications'].append(application)
+            candidate['revision'] += 1
+            next_policy = Policy(candidate)
+            await self.store.async_save(next_policy.config)
+            self.policy = next_policy
+        self.hass.bus.async_fire(APPLICATION_EVENT, {'revision':self.policy.config['revision']})
+        self.audit('system','application_import',application,True)
