@@ -52,6 +52,7 @@ async def async_unload_entry(hass, entry):
     if not await hass.config_entries.async_unload_platforms(entry, [Platform.SWITCH]):
         return False
     runtime = hass.data.pop(DOMAIN)
+    await runtime.error_log.flush()
     runtime.sidebar.uninstall()
     runtime.gate.uninstall()
     frontend.async_remove_panel(hass, PANEL_PATH)

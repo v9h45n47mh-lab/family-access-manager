@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.0.0-beta.1 – 15.11.2026
+
+- Klare semantische Vorabversionierung eingeführt.
+- Oberfläche vollständig auf unverändertes HA UI Kit 1.5.2 aktualisiert.
+- Dashboardfreigaben in den Mittelpunkt gestellt; Gerätefreigaben und Testschalter aus der Oberfläche entfernt.
+- Administrator-Fehlerprotokoll mit Benutzer, Zeitpunkt, Aktion, Ziel, Grund und Anfrageweg; maximal 200 dauerhaft gespeicherte Einträge.
+- Eigene HTTP-/WebSocket- und native Dashboardablehnungen erfasst, ohne Tokens oder vollständige Anfrageinhalte zu speichern.
+
 ## 0.4.0 – 15.11.2026
 
 - Native Seitenleistenliste je aktiviertem Benutzer nach Dashboardrechten filtern.

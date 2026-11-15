@@ -49,7 +49,7 @@ def main():
     all_files = files()
     output = ROOT / "dist"
     output.mkdir(exist_ok=True)
-    complete = output / f"Family_Access_Manager_{version}_Prototyp.zip"
+    complete = output / f"Family_Access_Manager_{version}.zip"
     install = output / "family_access_manager.zip"
     archive(complete, all_files)
     archive(install, [p for p in all_files if p.relative_to(ROOT).parts[0] == "custom_components" or p.relative_to(ROOT).as_posix() in {"README.md", "docs/LOKAL_CLOUD_TEST.md", "docs/TESTERGEBNISSE.md"}])

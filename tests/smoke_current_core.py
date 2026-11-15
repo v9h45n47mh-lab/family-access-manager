@@ -73,10 +73,10 @@ async def main():
             base = f"http://127.0.0.1:{port}"
             headers = {"Authorization": "Bearer " + token}
             async with ClientSession() as session:
-                async with session.get(base + "/family_access_manager_frontend/family-ui/1.2.1/family-ui.js") as response:
+                async with session.get(base + "/family_access_manager_frontend/family-ui/1.5.2/family-ui.js") as response:
                     assert response.status == 200
                     assert "javascript" in response.headers.get("Content-Type", "")
-                    assert 'UI_VERSION = "1.2.1"' in await response.text()
+                    assert 'UI_VERSION = "1.5.2"' in await response.text()
                 results["checks"]["vendored_kit_module_served_with_correct_mime"] = True
                 async with session.get(base + "/api/brands/marketplace/family_access_manager/icon.png", headers=headers) as response:
                     assert response.status == 200
@@ -118,6 +118,19 @@ async def main():
                     results["checks"]["native_dashboard_gate_on_existing_connection"] = True
                     owner_refresh = await hass.auth.async_create_refresh_token(owner, client_id="https://example.com")
                     owner_headers = {"Authorization": "Bearer " + hass.auth.async_create_access_token(owner_refresh)}
+                    async with session.post(base + "/api/family_access_manager/request", headers=headers, json={"action": "admin_error_log", "payload": {}}) as response:
+                        assert response.status == 403
+                    async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action": "admin_error_log", "payload": {}}) as response:
+                        assert response.status == 200
+                        diagnostics = (await response.json())["result"]["events"]
+                        assert any(e["source"] == "native_websocket" and e["operation"] == "lovelace/config" and e["reason"] for e in diagnostics)
+                        assert all(e["user_id"] == child.id for e in diagnostics)
+                    results["checks"]["error_log_admin_only_and_has_reasons"] = True
+                    async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action": "admin_snapshot", "payload": {}}) as response:
+                        snapshot = (await response.json())["result"]
+                        assert "error_log" in snapshot
+                        assert not {"entities", "areas", "labels"} & snapshot.keys()
+                    results["checks"]["dashboard_snapshot_has_no_device_catalogs"] = True
                     disabled = deepcopy(runtime.policy.config)
                     disabled["enabled_users"] = []
                     async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action": "save_policy", "payload": disabled}) as response:
@@ -191,6 +204,9 @@ async def main():
             assert reloaded.policy.config["enabled_users"] == [child.id]
             assert reloaded.gate.available
             assert reloaded.sidebar.available
+            assert reloaded.error_log.snapshot()
+            assert any(e["operation"] == "lovelace/config" for e in reloaded.error_log.snapshot())
+            results["checks"]["error_log_survives_reload"] = True
             results["checks"]["policy_persists_across_reload"] = True
             assert await hass.config_entries.async_unload(entry.entry_id)
         finally:

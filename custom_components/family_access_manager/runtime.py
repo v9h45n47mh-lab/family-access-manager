@@ -8,7 +8,7 @@ import uuid
 
 from homeassistant.core import Context
 from homeassistant.const import EVENT_PANELS_UPDATED
-from homeassistant.helpers import area_registry, device_registry, entity_registry, label_registry
+from homeassistant.helpers import device_registry, entity_registry
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN, STORAGE_KEY, STORAGE_VERSION, VERSION
@@ -16,10 +16,15 @@ from .gate import DashboardGate, principal
 from .policy import InvalidPolicy, Policy, Resource, default_policy, migrate_policy, validate_policy
 from .services import validate_service
 from .sidebar import SidebarFilter
+from .error_log import ERROR_LOG_LIMIT, PermissionErrorLog, request_target
 
 
 class AccessDenied(Exception):
     """A prototype operation was denied before reading or changing data."""
+
+    def __init__(self, message, *, target=None):
+        super().__init__(message)
+        self.target = target
 
 
 class Conflict(Exception):
@@ -33,6 +38,7 @@ class Runtime:
         self.policy = Policy(default_policy())
         self.lock = asyncio.Lock()
         self.events = deque(maxlen=200)
+        self.error_log = PermissionErrorLog(hass)
         self.gate = DashboardGate(self)
         self.sidebar = SidebarFilter(self)
         self.probe_entity_id = None
@@ -47,6 +53,7 @@ class Runtime:
             if migrated != saved:
                 await self.store.async_save(migrated)
             self.policy = next_policy
+        await self.error_log.load()
 
     def audit(self, user_id, operation, target, allowed):
         self.events.appendleft({
@@ -88,14 +95,49 @@ class Runtime:
         allowed = allowed and user.permissions.check_entity(entity_id, "control" if level == "control" else "read")
         self.audit(user.id, f"entity/{level}", entity_id, bool(allowed))
         if not allowed:
-            raise AccessDenied("Diese Entität ist für diese Aktion nicht freigegeben.")
+            if not self.policy.privileged(actor) and not self.policy.managed(actor):
+                reason = "Family Access ist für dieses Konto ausgeschaltet."
+            elif not self.policy.entity(actor, self.resource(entity_id), level):
+                reason = "Die Rolle enthält keine ausreichende Freigabe für diese Aktion."
+            else:
+                reason = "Die nativen Home-Assistant-Rechte verweigern diese Aktion."
+            raise AccessDenied(reason, target=entity_id)
 
-    async def dispatch(self, user, action, payload):
+    async def dispatch(self, user, action, payload, *, source="internal"):
+        try:
+            return await self._dispatch(user, action, payload)
+        except AccessDenied as err:
+            target = request_target(action, payload)
+            self.error_log.record(user, action, target, str(err), source=source)
+            raise
+        except InvalidPolicy as err:
+            self.error_log.record(user, "save_policy", "Rechtekonfiguration", str(err), source=source, kind="configuration")
+            raise
+        except Conflict:
+            raise
+        except ValueError:
+            if action == "read_dashboard":
+                self.error_log.record(user, action, request_target(action, payload),
+                                      "Die Dashboardanfrage ist ungültig oder das Dashboard ist nicht verfügbar.",
+                                      source=source, kind="error")
+            raise
+        except Exception as err:
+            self.error_log.record(user, action, request_target(action, payload),
+                                  f"Die Anfrage konnte nicht abgeschlossen werden ({type(err).__name__}).",
+                                  source=source, kind="error")
+            raise
+
+    async def _dispatch(self, user, action, payload):
         if not user.is_active:
             raise AccessDenied("Das Benutzerkonto ist nicht aktiv.")
         if type(payload) is not dict:
             raise ValueError("Ungültige Anfrage.")
         actor = principal(user)
+        if action == "admin_error_log":
+            self.require_admin(user)
+            if payload:
+                raise ValueError("Diese Anfrage benötigt keine Parameter.")
+            return {"events": self.error_log.snapshot(), "limit": ERROR_LOG_LIMIT}
         if action == "status":
             if payload:
                 raise ValueError("Diese Anfrage benötigt keine Parameter.")
@@ -120,16 +162,12 @@ class Runtime:
             if payload:
                 raise ValueError("Diese Anfrage benötigt keine Parameter.")
             users = await self.hass.auth.async_get_users()
-            ar = area_registry.async_get(self.hass)
-            lr = label_registry.async_get(self.hass)
             return {
                 "policy": deepcopy(self.policy.config),
                 "users": [{"id": u.id, "name": u.name or u.id, "admin": u.is_admin or u.is_owner, "active": u.is_active} for u in users if not u.system_generated],
                 "dashboards": self.dashboard_catalog(),
-                "entities": sorted([{"id": s.entity_id, "name": s.name} for s in self.hass.states.async_all()], key=lambda x: x["name"].lower()),
-                "areas": [{"id": a.id, "name": a.name} for a in ar.async_list_areas()],
-                "labels": [{"id": l.label_id, "name": l.name} for l in lr.async_list_labels()],
                 "events": list(self.events),
+                "error_log": self.error_log.snapshot(),
             }
         if action == "save_policy":
             self.require_admin(user)
@@ -182,7 +220,7 @@ class Runtime:
             allowed = self.policy.dashboard(actor, path)
             self.audit(user.id, "dashboard/view", path, allowed)
             if not allowed:
-                raise AccessDenied("Dieses Dashboard ist nicht freigegeben.")
+                raise AccessDenied("Die Rolle enthält keine Freigabe für dieses Dashboard.", target=path)
             dashboard = self.dashboards().get(path)
             if dashboard is None and path == "lovelace":
                 dashboard = self.dashboards().get(None)

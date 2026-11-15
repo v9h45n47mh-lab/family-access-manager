@@ -19,12 +19,12 @@ from .runtime import AccessDenied, Conflict
 _LOGGER = logging.getLogger(__name__)
 
 
-async def execute(hass, user, action, payload):
+async def execute(hass, user, action, payload, *, source="internal"):
     runtime = hass.data.get(DOMAIN)
     if runtime is None:
         return None, ("unavailable", "Family Access Manager ist nicht geladen.", 503)
     try:
-        return await runtime.dispatch(user, action, payload), None
+        return await runtime.dispatch(user, action, payload, source=source), None
     except AccessDenied as err:
         return None, ("unauthorized", str(err), 403)
     except Conflict as err:
@@ -60,7 +60,7 @@ class RequestView(HomeAssistantView):
         if type(msg) is not dict or set(msg) != {"action", "payload"} or not isinstance(msg["action"], str):
             return self.json({"error": "invalid_request"}, status_code=400)
         from homeassistant.helpers.http import KEY_HASS
-        result, error = await execute(request.app[KEY_HASS], request["hass_user"], msg["action"], msg["payload"])
+        result, error = await execute(request.app[KEY_HASS], request["hass_user"], msg["action"], msg["payload"], source="http")
         if error:
             return self.json({"error": error[0], "message": error[1]}, status_code=error[2])
         return self.json({"result": result})
@@ -77,7 +77,7 @@ async def websocket_request(hass, connection, msg):
     if len(json.dumps(msg).encode()) > MAX_POLICY_BYTES:
         connection.send_error(msg["id"], "request_too_large", "Die Anfrage ist zu groß.")
         return
-    result, error = await execute(hass, connection.user, msg["action"], msg["payload"])
+    result, error = await execute(hass, connection.user, msg["action"], msg["payload"], source="websocket")
     if error:
         connection.send_error(msg["id"], error[0], error[1])
     else:

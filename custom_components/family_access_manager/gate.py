@@ -6,7 +6,25 @@ It never upgrades a non-administrator to an administrator.
 
 from functools import wraps
 
+from homeassistant.exceptions import Unauthorized
+
 from .policy import Principal
+from .error_log import request_target
+
+
+class _DiagnosticConnection:
+    def __init__(self, connection, runtime, operation, target):
+        self._connection, self._runtime = connection, runtime
+        self._operation, self._target = operation, target
+
+    def __getattr__(self, name):
+        return getattr(self._connection, name)
+
+    def send_error(self, message_id, code, message, *args, **kwargs):
+        if code == "unauthorized":
+            self._runtime.error_log.record(self.user, self._operation, request_target("read_dashboard", {"url_path": self._target}),
+                                           "Home Assistant verweigert diese Dashboardaktion.", source="native_websocket")
+        return self._connection.send_error(message_id, code, message, *args, **kwargs)
 
 COMMAND_LEVELS = {
     "lovelace/config": "view",
@@ -52,10 +70,27 @@ class DashboardGate:
             user = principal(connection.user)
             if policy.config["native_dashboard_gate"] and policy.managed(user):
                 path = msg.get("url_path") or "lovelace"
-                if not policy.dashboard(user, path, level):
+                try:
+                    allowed = policy.dashboard(user, path, level)
+                except Exception as err:
+                    self.runtime.error_log.record(connection.user, name, request_target("read_dashboard", {"url_path": path}),
+                                                  f"Dashboardprüfung fehlgeschlagen ({type(err).__name__}).",
+                                                  source="native_websocket", kind="error")
+                    raise
+                if not allowed:
                     self.runtime.audit(user.id, name, path, False)
+                    self.runtime.error_log.record(connection.user, name, request_target("read_dashboard", {"url_path": path}),
+                                                  f"Keine Dashboardfreigabe für {level}.", source="native_websocket")
                     connection.send_error(msg["id"], "unauthorized", "Dieses Dashboard ist nicht freigegeben.")
                     return
+            if policy.managed(user):
+                path = msg.get("url_path") or "lovelace"
+                try:
+                    return original(hass, _DiagnosticConnection(connection, self.runtime, name, path), msg)
+                except Unauthorized:
+                    self.runtime.error_log.record(connection.user, name, request_target("read_dashboard", {"url_path": path}),
+                                                  "Home Assistant verweigert diese Dashboardaktion.", source="native_websocket")
+                    raise
             return original(hass, connection, msg)
         return guarded
 

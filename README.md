@@ -1,136 +1,79 @@
-# Family Access Manager 0.4.0
+# Family Access Manager 1.0.0-beta.1
 
-Installierbare Prüfversion einer Benutzerberechtigungsverwaltung für Home Assistant.
+Benutzerrollen und Dashboardfreigaben für Home Assistant. Die Oberfläche verwendet vollständig das lokal eingebundene **HA UI Kit 1.5.2**.
 
-**Diese Version ist noch keine umfassende Zugriffssperre für Home Assistant.** Sie prüft die eigenen HTTP- und WebSocket-Funktionen im Backend. Optional sperrt sie direkte Abfragen ausgewählter Lovelace-Dashboard-Konfigurationen für zugeordnete Benutzer. Allgemeine HA-Geräte-APIs, Suche, Verlauf, Kameras, Assist und Drittintegrationen sind noch nicht allgemein abgesichert.
+## Dashboardzugriff einrichten
 
-## Oberfläche ab 0.2.0
+1. Unter **Rollen** eine Rolle anlegen und die gewünschten Dashboards auf **Freigegeben** setzen.
+2. Unter **Benutzer** das Konto aktivieren, die Rolle wählen und **Änderungen speichern**.
+3. Die Seitenleiste zeigt diesem Konto nur freigegebene Dashboards sowie Family Access und die eigenen Konto-/internen Routen. Allgemeine Panels wie Verlauf, Kalender und Medien werden ausgeblendet; das feste Konto- und Benachrichtigungsmenü bleibt bestehen.
+4. Für direkte Dashboard-Konfigurationsanfragen zusätzlich **Dashboard-Konfigurationen sperren** einschalten und speichern.
+5. Mit einem separaten Testkonto prüfen. Nach einem Update Home Assistant neu starten und den Browser vollständig neu laden.
 
-Die Oberfläche verwendet die lokal mitgelieferten Originalkomponenten von **HA UI Kit 1.2.1** aus `v9h45n47mh-lab/ha-ui-kit`, einschließlich Panel-Kopf, Navigation, Zeilen, Auswahlfeldern, Schaltern, Buttons und Dialogen. Gemeinsame Darstellung und Symbole stammen vollständig aus dem Kit; es gibt keine lokale CSS-Überschreibung. Die Kit-Version ist per Prüfsummen fest gebunden.
+Eine Rolle lässt sich vorbereiten, ohne das Konto zu aktivieren. Beim Ausschalten bleibt die Rolle gespeichert und die normale HA-Navigation wird wiederhergestellt. Administratoren und Eigentümer behalten Vollzugriff.
 
-Die Umstellung verändert keine Berechtigungsregeln und ergänzt keine Kalenderfunktion. Ein Marketplace-Logo wird im lokalen `brand/`-Verzeichnis mitgeliefert.
+Gerätefreigaben sind für diesen Ablauf nicht erforderlich und werden nicht mehr angeboten. Die Bedienung in freigegebenen Dashboards folgt den nativen HA-Rechten. Vorhandene Anzeigen-/Bedienen-/Bearbeiten-Zuordnungen erscheinen als freigegeben und bleiben bis zu einer Änderung gespeichert; es wird damit kein eigener schreibgeschützter HA-Modus oder Administratorzugriff vergeben.
 
-## Benutzer gezielt aktivieren
+## Fehlerprotokoll
 
-Unter **Benutzer** kannst du **Family Access für …** pro Konto einschalten. Wähle die Rolle und bestätige mit **Änderungen speichern**. Eine Rollenzuordnung allein aktiviert den Benutzer nicht. Beim Ausschalten bleibt die Rolle gespeichert, und der native HA-Zugriff bleibt unverändert. Die eigene Family-Access-API erteilt ausgeschalteten Konten keine Geräte- oder Dashboardfreigaben. Administratoren und Eigentümer behalten Vollzugriff.
+Administratoren öffnen **Family Access → Fehler**. Pro Eintrag werden Zeitpunkt, Benutzer, Aktion, Ziel, Grund und Anfrageweg angezeigt. **Aktualisieren** lädt neue Einträge, ohne ungespeicherte Rollenänderungen zu verwerfen.
 
-Neue Benutzer sind ausgeschaltet. Beim Update werden bisher verwaltete Benutzer automatisch aktiviert, damit vorhandene Einschränkungen erhalten bleiben. Eine aktivierte Zuordnung mit **Kein Zugriff** hat weiterhin keine Freigaben. Für native Dashboard-Konfigurationsanfragen muss zusätzlich der globale Schalter **Dashboard-Konfigurationen sperren** eingeschaltet sein; dieser greift nur bei aktivierten Benutzern.
+Die letzten **200 Fehler** werden begrenzt gespeichert und bleiben über HA-Neustarts erhalten. Erfasst werden abgelehnte authentifizierte eigene HTTP-/WebSocket-Anfragen, Ablehnungen der zusätzlichen Dashboard-Sperre, native HA-Administratorablehnungen dieser Dashboardaktionen sowie technische Fehler eigener Anfragen. Die Datei liegt getrennt von der Rechtekonfiguration im HA-Storage. Tokens, Authentifizierungsheader, vollständige Anfrageinhalte und Serviceparameter werden nicht protokolliert. Normale Benutzer können das Protokoll auch nicht über einen direkten API-Aufruf lesen.
 
-## Seitenleiste ab 0.4.0
+Fehler vor der Anmeldung oder beim Laden einer anderen Integration gehören in das allgemeine HA-Protokoll. Ein Fehler beim Speichern der Diagnose verändert keine Berechtigungsentscheidung.
 
-Für aktivierte Benutzer liefert HA nur die freigegebenen Dashboards sowie Family Access und die eigenen Profil-/internen Routen. Andere allgemeine Panels wie Verlauf, Kalender, Medien und zusätzliche Integrationspanels werden ausgeblendet. Das native Kontomenü und der Benachrichtigungsbereich bleiben bestehen. Administratoren und Benutzer ohne aktiviertes Family Access behalten ihre HA-Panelliste.
+## Funktionsumfang
 
-Die Filterung gilt unabhängig vom globalen Dashboard-Sperrschalter. Nach dem Speichern informiert HA die offenen Browser über `panels_updated`; sie laden ihre Einträge neu. Beim ersten Update HA neu starten und den Browser vollständig neu laden. Eine bisherige, nicht freigegebene Startseite kann danach als nicht verfügbar erscheinen; dann ein freigegebenes Dashboard öffnen. Es werden keine Startseiten- oder anderen Benutzerpräferenzen verändert.
-
-Für direkte Konfigurationsanfragen bleibt die optionale Dashboard-Sperre zuständig. Die Seitenleistenfilterung erteilt keine zusätzlichen Rechte und ersetzt keine allgemeine API-Absicherung.
-
-## Enthalten
-
-- Vorhandene HA-Benutzer verwenden; Einstellungen ausschließlich für echte HA-Administratoren und den Eigentümer.
-- Rollen anlegen, benennen und zuordnen.
-- Dashboardfreigaben sowie Gerätefreigaben über Entitäten, Bereiche und Labels getrennt verwalten.
-- Eigene Lese- und Bedienfunktionen mit serverseitiger Rechteprüfung; identische Prüfinstanz für HTTP und WebSocket.
-- Virtueller Testschalter zum Prüfen echter Schaltaktionen ohne Geräte im Haus zu bedienen.
-- Optionale native Prüfung von `lovelace/config`, `lovelace/config/save` und `lovelace/config/delete` im gemeinsamen WebSocket-Handler.
-- Begrenztes Prüfprotokoll im Arbeitsspeicher, maximal 200 Einträge. Keine Tokens oder vollständigen Aktionsparameter werden protokolliert.
-- Gespeicherte Rechte bleiben beim Neuladen der Integration erhalten. Gleichzeitige Änderungen werden über eine Revisionsnummer erkannt.
+- Bestehende persönliche HA-Konten verwenden; Verwaltung ausschließlich durch Administratoren und Eigentümer.
+- Rollen und Dashboardfreigaben verwalten, Benutzer einzeln aktivieren.
+- Native Panelliste je aktiviertem Benutzer filtern, ohne globale Panels oder Startseitenpräferenzen zu verändern.
+- Offene Browser nach erfolgreichen Rechteänderungen über das native Ereignis `panels_updated` aktualisieren.
+- Eigene Dashboard-Anfragen im Backend prüfen; identische Prüfinstanz für HTTP und WebSocket.
+- Optional `lovelace/config`, `lovelace/config/save` und `lovelace/config/delete` prüfen. Native HA-Administratorprüfungen bleiben erhalten.
+- Revisionsprüfung gegen gleichzeitiges Überschreiben, gespeicherte Rollen und Aktivierungen ohne Datenverlust übernehmen.
+- Gemeinsame Komponenten für Kopf, Navigation, Listen, Auswahlfelder, Schalter, Buttons, Dialoge, Meldungen und Protokoll. Keine lokalen CSS-Überschreibungen oder CDN-Abhängigkeiten.
 
 ## Installation
 
-### Über Marketplace / HACS
+### Marketplace / HACS
 
-1. `https://github.com/v9h45n47mh-lab/family-access-manager` als **benutzerdefiniertes Repository** mit der Kategorie **Integration** hinzufügen.
-2. Da 0.4.0 ausdrücklich als Vorabversion veröffentlicht wird, gegebenenfalls Vorab-/Betaversionen in der Versionsauswahl anzeigen lassen.
-3. **Family Access Manager (Prüfversion)** herunterladen und HA neu starten.
-4. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
+Das Repository `https://github.com/v9h45n47mh-lab/family-access-manager` als benutzerdefiniertes Repository der Kategorie **Integration** hinzufügen. Vorabversionen gegebenenfalls einblenden, die gewünschte Version installieren und HA neu starten. Anschließend unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
 
-Das Repository ist als benutzerdefinierte Quelle nutzbar; es ist nicht automatisch in den offiziellen Katalog aufgenommen.
+Die Quelle ist als benutzerdefiniertes Repository nutzbar; sie wird nicht automatisch Teil des offiziellen Katalogs.
 
-### Manuell über GitHub
+### Manuell
 
-Im [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) steht `family_access_manager.zip` als Installationspaket bereit. Das vollständige Quellpaket heißt `Family_Access_Manager_0.4.0_Prototyp.zip`.
+Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.0.0-beta.1.zip`.
 
-1. ZIP entpacken. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren.
-2. Home Assistant neu starten.
-3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → Family Access Manager** auswählen.
-4. Den neuen Seitenleisteneintrag **Family Access** öffnen.
+## Schutzumfang und Grenzen
 
-Es werden keine Ports, Netzwerkeinstellungen, HA-Gruppen oder vorhandenen Tokens verändert. Nach der Einrichtung sind keine Benutzer zugeordnet und beide optionalen Schalter ausgeschaltet.
+Diese Vorabversion verwaltet **Dashboardzugriff und Navigation**. Die optionale native Sperre schützt neue Lovelace-Konfigurationsanfragen; bereits geladene Inhalte lassen sich nicht zurückholen. Allgemeine HA-Geräte-/System-APIs, Suche, Historie, Kameras, Assist, Automationen und Drittintegrationen bleiben durch die nativen HA-Rechte bestimmt. Das Ausblenden einer Seitenleiste ist allein keine allgemeine Sicherheitsgrenze.
 
-## Erster Test
+Eine bisherige, nicht freigegebene Startseite kann als nicht verfügbar erscheinen; dann ein freigegebenes Dashboard öffnen. Die Integration verändert keine Startseitenpräferenzen, HA-Gruppen, Tokens oder Netzwerkeinstellungen. Beim Entfernen oder fehlgeschlagenen Laden entfällt auch ihre Filterung und zusätzliche Sperre.
 
-1. Unter **Rollen** eine Rolle beispielsweise „Paul“ anlegen.
-2. Ein vorhandenes Dashboard zum **Anzeigen** freigeben.
-3. Unter **Gerätefreigaben → Entitäten** nach **Family Access Testschalter** suchen und zunächst **Anzeigen** wählen. Die tatsächliche Entitäts-ID wird auch unter **Prüfen** angezeigt.
-4. Unter **Benutzer** beim normalen HA-Konto von Paul **Family Access einschalten**, diese Rolle zuordnen und speichern. Ein Konto mit Administratorrechten kann nicht eingeschränkt werden.
-5. Mit diesem Konto in einem separaten Browserfenster anmelden. Unter **Family Access → Prüfen** muss das Anzeigen des Testschalters funktionieren und das Umschalten abgelehnt werden.
-6. Als Administrator die Gerätefreigabe des Testschalters auf **Bedienen** ändern. Danach muss das Umschalten über **Family Access** funktionieren. Der virtuelle Schalter betätigt keine echte Hardware.
-7. Optional unter **Benutzer → Prüfversion aktivieren** die Prüfung der Dashboard-Konfigurationen einschalten. Ein nicht freigegebenes Dashboard muss bei einer neuen Konfigurationsabfrage abgelehnt werden.
-8. Dieselben Tests über die Nabu-Casa-Adresse wiederholen. Für den Prüfablauf siehe [docs/LOKAL_CLOUD_TEST.md](docs/LOKAL_CLOUD_TEST.md).
+Die Oberfläche bietet keine Geräteverwaltung und keinen eigenen Dashboardeditor. Altfelder und bisherige interne Prüfendpunkte bleiben für die Abwärtskompatibilität erhalten. Ein Live-Test mit deiner produktiven HA-Instanz und deinem Nabu-Casa-Konto ist noch erforderlich. [Prüfablauf](docs/LOKAL_CLOUD_TEST.md) und [Prüfergebnisse](docs/TESTERGEBNISSE.md) beschreiben den nachgewiesenen Umfang.
 
-**Die Freigaben der Prüfversion ändern noch nicht die allgemeinen HA-Entitätsrechte.** Deshalb kann ein Aufruf über die native HA-Geräte-API weiterhin erfolgreich sein, obwohl ihn die Family-Access-API verweigert. Genau diese zusätzliche Absicherung gehört in die nächste Entwicklungsstufe.
+## Versionen und Entwicklung
 
-## Bedeutung der Rechte
+[Semantische Versionierung](docs/VERSIONING.md): `MAJOR.MINOR.PATCH`, Vorabstände als `1.0.0-beta.1`, `1.0.0-beta.2` usw. Die bisherigen Tags bleiben erhalten.
 
-| Auswahl | Wirkung in 0.4.0 |
-|---|---|
-| Dashboard: Anzeigen | Konfiguration über die eigene API abrufen; bei eingeschalteter Dashboard-Sperre auch native Konfigurationsabfragen zulassen. |
-| Dashboard: Bedienen | Schließt Anzeigen ein; tatsächliche Bedienung braucht zusätzlich eine Gerätefreigabe. |
-| Dashboard: Bearbeiten | Wird im Rechtemodell vorgemerkt. Ein normaler HA-Benutzer erhält in dieser Version noch keinen nativen Dashboardeditor. |
-| Gerät: Anzeigen | Zustand und Attribute über die eigene API lesen. |
-| Gerät: Bedienen | Zusätzlich die unterstützten Aktionen über die eigene API ausführen. |
-| Administrator/Eigentümer | Echte HA-Administratoren und der Eigentümer behalten Vollzugriff. Rollen können keine Administratorrechte verleihen. |
-
-Gerätebedienung ist zunächst nur für den virtuellen Testschalter eingeschaltet. Die Option **Freigegebene Geräte über die Family-Access-API bedienen** erlaubt darüber hinaus ausdrücklich freigegebene Lampen, Schalter, Input-Booleans und Abdeckungen. Es gibt dafür weiterhin keine allgemeine Gerätebedienoberfläche; die Funktionen sind für die spätere Einbindung vorbereitet.
-
-Freigaben aus mehreren Quellen werden addiert; die höhere Freigabe gilt. **Kein Zugriff** entfernt einen Eintrag, ist aber kein ausdrückliches Verbot gegenüber einer zusätzlichen Bereichs- oder Labelfreigabe. Labels werden bei jeder Anfrage anhand der aktuellen Entitäts- und Gerätezuordnung ausgewertet. Bereiche werden direkt von der Entität oder ersatzweise vom Gerät übernommen. Neue entsprechend zugeordnete Entitäten erhalten damit automatisch die Freigabe. Labels auf anderen Objekttypen werden nicht geerbt.
-
-**Family Access aus** deaktiviert die Anwendung der Rolle für dieses Konto und lässt den nativen Dashboardzugriff unverändert. Die Rollenzuordnung bleibt gespeichert. **Kein Zugriff** im Rollenfeld speichert eine leere Rollenzuordnung: Bei aktiviertem Family Access und eingeschalteter Dashboard-Sperre darf dieses Konto keine Dashboard-Konfiguration abrufen. Ohne Aktivierung und Freigabe verweigert die eigene Family-Access-API normalen Benutzern Geräte- und Dashboardoperationen.
-
-Die Berechtigung für eine Entität gilt innerhalb dieser API auf allen Dashboards gleich. Der aktuelle Dashboardpfad oder ein `Referer` kann keine Geräteberechtigung erweitern.
-
-## Grenzen
-
-- Die Seitenleistenfilterung entfernt Panels aus der Navigation aktivierter Benutzer. Sie sperrt keine allgemeinen HA-Geräte-APIs und blendet keine festen Konto-/Benachrichtigungselemente aus.
-- Die optionale native Sperre schützt Dashboard-Konfigurationsanfragen. Sie entfernt keine zuvor im Browser gespeicherten Inhalte und sperrt nicht automatisch Daten über andere HA-APIs.
-- Es wird kein Benutzer gegenüber HA als Administrator ausgegeben. Native Administratorprüfungen bleiben bestehen.
-- Ein freigegebenes Dashboard erteilt niemals automatisch Zugriff auf die darauf genannten Geräte.
-- Automationen, Skripte, Szenen, Webhooks, Assist, Historie, Statistiken, Kamerastreams, Suche und Custom-Integration-Endpunkte sind noch nicht allgemein abgesichert.
-- Die Integration verwendet für die experimentelle Dashboard-Sperre die interne WebSocket-Command-Registry. HA-Updates können Anpassungen erfordern.
-- Deaktivieren oder Entfernen der Integration entfernt auch die optionale Dashboard-Sperre. Eine fehlgeschlagene Einrichtung ist kein garantierter Zugriffsschutz.
-- Es wurde kein Test mit deinem Nabu-Casa-Konto und deiner produktiven HA-Instanz durchgeführt. Lokale Tests und die Prüfung des gemeinsamen Cloud-Einstiegspunkts ersetzen diesen Test nicht.
-
-## Nächste Entwicklungsstufen
-
-1. Verhalten der ersten Prüfversion lokal und über die echte Nabu-Casa-Verbindung bestätigen.
-2. Native Entitätsrechte und weitere HA-Endpunkte gezielt absichern, einschließlich Zustandsabonnements und alternativer Schaltwege. Dazu auch das Zusammenspiel mit Light Manager, Shutter Manager und den Weckern prüfen.
-3. Zusätzliche Panelarten und individuelle Dashboarddarstellung bei Bedarf gezielt freigeben.
-4. Einen begrenzten Dashboardeditor und gezielte Bearbeitungsfunktionen für eigene Wecker und Programme ergänzen.
-
-## Entwicklung und Prüfungen
-
-- Die automatisierten pytest-Tests verwenden `pytest-homeassistant-custom-component==0.13.375` und dessen HA-Version **2026.10.4**.
-- Für den aktuellen HA-Core existiert ein davon unabhängiger Installations- und API-Test: `tests/smoke_current_core.py`. Dieser startet eine isolierte HA-Instanz und sendet echte lokale HTTP-/WebSocket-Anfragen. Die Netzwerkschnittstellenliste wird dabei auf eine simulierte Loopback-Schnittstelle begrenzt.
-- `tests/panel_dom.cjs` prüft die Bedienlogik und sicheres Escaping mit einer lokalen DOM-Implementierung. Das ist kein Browser-Renderingtest.
-- `tests/ui-browser.cjs` prüft 40 Desktop-/Mobil-/Themevarianten in Chromium, vergleicht berechnete Stile mit den Originalkomponenten und prüft die Bedienabläufe. Screenshots stehen als CI-Artefakt bereit.
-- Die tatsächlich abgeschlossenen Prüfungen und die verbleibenden Grenzen stehen in `docs/TESTERGEBNISSE.md`.
+Die pytest-Suite verwendet HA 2026.10.4; ein unabhängiger Installations-/API-Test verwendet Core 2026.11.1. Die Browserprüfung vergleicht die tatsächlich gerenderten Komponenten direkt mit dem gepinnten UI Kit bei 1100/430/390/375/320 px und hellen/dunklen Themes.
 
 ```bash
-# In einer separaten Python-3.14-Umgebung:
-pip install pytest-homeassistant-custom-component==0.13.375 home-assistant-frontend==20260930.5
+# Separate Python-3.14-Umgebung
+pip install -r requirements-test.txt
 python -m pytest
 
-# Aktueller Core: eigene separate Umgebung, Frontend passend zum HA-Manifest:
+# Separate Umgebung für aktuellen Core
 pip install homeassistant==2026.11.1 home-assistant-frontend==20261028.5
 PYTHONPATH=. python tests/smoke_current_core.py
 
-# UI-Kit, DOM-Bedienlogik und Browserdarstellung:
 npm ci --ignore-scripts
 npm run check:kit
 npm run test:panel
 npx playwright install --with-deps chromium
 npm run test:browser
+python scripts/build_release.py
 ```
 
-Die Tests arbeiten ausschließlich mit Testkonten und temporären Konfigurationen. Nicht gegen ein produktives HA-Konfigurationsverzeichnis ausführen.
-
+Tests ausschließlich mit temporären Konfigurationen ausführen. Ein produktives HA-Konfigurationsverzeichnis ist kein Testverzeichnis.

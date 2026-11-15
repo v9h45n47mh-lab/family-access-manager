@@ -4,9 +4,12 @@ const fixture=`<!doctype html><html lang="de"><head><meta charset="utf-8"><style
 import '${frontend}panel.js';
 const policy={revision:0,native_dashboard_gate:false,device_control:false,roles:{family:{name:'Kinder',dashboards:{'dashboard-paul':'view'},entities:{'switch.probe':'view'},areas:{},labels:{}}},bindings:{paul:['family']},enabled_users:['paul']};
 const snapshot={policy,users:[{id:'manuel',name:'Manuel',admin:true,active:true},{id:'paul',name:'Paul',admin:false,active:true},{id:'max',name:'Maximilian',admin:false,active:true}],dashboards:[{id:'dashboard-paul',name:'Paul'},{id:'dashboard-parents',name:'Eltern'}],entities:[{id:'switch.probe',name:'Testschalter'},{id:'light.paul',name:'Licht Paul'},{id:'light.very_long_entity_name_for_testing',name:'LangeEntitätsbezeichnungOhneLeerzeichenDieAufDemHandyUmgebrochenWerdenMuss'},{id:'light.escape',name:'<img src=x onerror=alert(1)>'}],areas:[{id:'paul',name:'Paul'}],labels:[{id:'paul',name:'Paul'}],events:[{operation:'entity/view',target:'switch.probe',allowed:true,time:'2026-11-10T10:00:00Z'}]};
-const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'0.4.0',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
+snapshot.dashboards.push({id:'dashboard-long-name',name:'LangeDashboardbezeichnungOhneLeerzeichenDieAufDemHandyUmgebrochenWerdenMuss'},{id:'dashboard-unsafe',name:'<img src=x onerror=alert(1)>'});
+snapshot.error_log=[{time:'2026-11-15T10:00:00Z',user_id:'paul',user_name:'Paul',operation:'read_dashboard',target:'dashboard-parents',reason:'Die Rolle enthält keine Freigabe für dieses Dashboard.',source:'websocket',kind:'denied'}];
+snapshot.error_log.push({...snapshot.error_log[0],user_name:'<img src=x onerror=alert(1)>',reason:'<script>alert(1)</script> Lange Diagnose für einen sicheren Umbruch auf Mobilgeräten'});
+const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.0.0-beta.1',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
 window.fixture={snapshot,status,saves:[],calls:[],state:'off'};
-const hass={user:{id:'manuel'},callWS:async msg=>{window.fixture.calls.push(msg.action);if(msg.action==='status')return structuredClone(status);if(msg.action==='admin_snapshot'){if(!status.is_admin)throw Error('Nicht freigegeben');return structuredClone(snapshot);}if(msg.action==='save_policy'){if(!status.is_admin)throw Error('Nicht freigegeben');snapshot.policy=structuredClone(msg.payload);snapshot.policy.revision++;window.fixture.saves.push(structuredClone(msg.payload));return {revision:snapshot.policy.revision};}if(msg.action==='read_entity')return {state:window.fixture.state};if(msg.action==='call_service'){if(!status.is_admin)throw Error('Nicht freigegeben');window.fixture.state=window.fixture.state==='off'?'on':'off';return {executed:true};}if(msg.action==='read_dashboard')return {views:[]};throw Error('Unknown action');},callApi:async()=>({result:structuredClone(status)})};
+const hass={user:{id:'manuel'},callWS:async msg=>{window.fixture.calls.push(msg.action);if(msg.action==='status')return structuredClone(status);if(msg.action==='admin_snapshot'){if(!status.is_admin)throw Error('Nicht freigegeben');return structuredClone(snapshot);}if(msg.action==='save_policy'){if(!status.is_admin)throw Error('Nicht freigegeben');snapshot.policy=structuredClone(msg.payload);snapshot.policy.revision++;window.fixture.saves.push(structuredClone(msg.payload));return {revision:snapshot.policy.revision};}if(msg.action==='read_entity')return {state:window.fixture.state};if(msg.action==='call_service'){if(!status.is_admin)throw Error('Nicht freigegeben');window.fixture.state=window.fixture.state==='off'?'on':'off';return {executed:true};}if(msg.action==='admin_error_log'){if(!status.is_admin)throw Error('Nicht freigegeben');return {events:structuredClone(snapshot.error_log),limit:200};}if(msg.action==='read_dashboard'){if(!status.is_admin)throw Error('Nicht freigegeben');return {views:[]};}throw Error('Unknown action');},callApi:async()=>({result:structuredClone(status)})};
 window.fixture.hass=hass;const app=document.createElement('family-access-panel');document.body.append(app);app.hass=hass;window.app=app;
 </script></body></html>`;
 const server=http.createServer((req,res)=>{
@@ -22,7 +25,7 @@ const server=http.createServer((req,res)=>{
  try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
   const app=page.locator('family-access-panel');await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).waitFor();
-  const pages=[['users','Benutzer'],['roles','Rollen'],['test','Prüfen'],['settings','Umfang']];
+  const pages=[['users','Benutzer'],['roles','Rollen'],['test','Prüfen'],['errors','Fehler'],['settings','Umfang']];
   for(const width of [1100,430,390,375,320])for(const theme of ['light','dark']){
    await page.setViewportSize({width,height:1000});await page.evaluate(dark=>document.body.classList.toggle('dark',dark),theme==='dark');
    for(const [id,label] of pages){
@@ -31,8 +34,8 @@ const server=http.createServer((req,res)=>{
     const bad=await app.evaluate(el=>[...el.shadowRoot.querySelectorAll('.setting-row,.grid,.card-top,.fui-panel-header')].filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>[n.className,n.scrollWidth,n.clientWidth]));
     assert.deepEqual(bad,[],'No control overflow: '+[width,theme,id]);
     const compared=await page.evaluate(async({base,id})=>{
-     const kit=await import(base+'family-ui/1.2.1/family-ui.js'),ref=document.createElement('div');ref.attachShadow({mode:'open'});document.body.append(ref);
-     ref.shadowRoot.innerHTML='<style>'+kit.UI_CSS+'</style>'+kit.panelHeader({title:'Family Access'})+kit.navigation({label:'Family Access',items:[{id:'users',label:'Benutzer'},{id:'roles',label:'Rollen'},{id:'test',label:'Prüfen'}],active:id,help:false,settingsLabel:'Umfang'})+'<main>'+kit.section({id:'ref',title:'Benutzer',content:kit.row({title:'Paul',description:'Benutzer',trailing:kit.toggle({label:'Schalter',action:'noop',checked:id==='users'})})+kit.selectField({id:'ref-select',label:'Rolle',value:'none',options:[{value:'none',label:'Kein Zugriff'}]})})+'</main>';
+     const kit=await import(base+'family-ui/1.5.2/family-ui.js'),ref=document.createElement('div');ref.attachShadow({mode:'open'});document.body.append(ref);
+     ref.shadowRoot.innerHTML='<style>'+kit.UI_CSS+'</style>'+kit.panelHeader({title:'Family Access'})+kit.navigation({label:'Family Access',items:[{id:'users',label:'Benutzer'},{id:'roles',label:'Rollen'},{id:'test',label:'Prüfen'},{id:'errors',label:'Fehler'}],active:id,help:false,settingsLabel:'Umfang'})+'<main>'+kit.section({id:'ref',title:'Benutzer',content:kit.row({title:'Paul',description:'Benutzer',trailing:kit.toggle({label:'Schalter',action:'noop',checked:id==='users'})})+kit.selectField({id:'ref-select',label:'Rolle',value:'none',options:[{value:'none',label:'Kein Zugriff'}]})})+'</main>';
      const actual=document.querySelector('family-access-panel').shadowRoot,pairs=[['.fui-panel-header',['padding','gap','minHeight','backgroundColor']],['.fui-panel-header strong',['fontFamily','fontSize','fontWeight']],['nav button',['padding','fontSize','fontWeight','color']],['main',['padding']],['.settings-fold span',['fontSize','fontWeight']],['.row-text strong',['fontSize','fontWeight','lineHeight']],['.row-text small',['fontSize','color']],['select',['padding','borderRadius','fontSize','color','backgroundColor']],['.switch-track',['width','height','backgroundColor']],['.switch-thumb',['width','height']],['button.primary',['backgroundColor','color','borderRadius','padding','fontSize']]];
      const result=[];for(const [selector,keys] of pairs){const a=actual.querySelector(selector),b=ref.shadowRoot.querySelector(selector);if(a&&b)result.push({selector,actual:Object.fromEntries(keys.map(k=>[k,getComputedStyle(a)[k]])),reference:Object.fromEntries(keys.map(k=>[k,getComputedStyle(b)[k]]))});}ref.remove();return result;
     },{base:frontend,id});
@@ -65,21 +68,30 @@ const server=http.createServer((req,res)=>{
   await maxSwitch.click();
   assert.equal(await maxSwitch.evaluate(el=>el===el.getRootNode().activeElement),true,'Toggling retains keyboard focus');
   await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();assert.equal(await app.locator('img').count(),0);
-  await app.locator('[data-grant="switch.probe"]').selectOption('control');
+  await app.locator('[data-grant="dashboard-parents"]').selectOption('view');
   await app.getByRole('button',{name:'Neu laden',exact:true}).click();
   const modal=app.getByRole('dialog',{name:'Änderungen verwerfen?',exact:true});await modal.waitFor();
   await page.keyboard.press('Escape');assert.equal(await modal.isVisible(),false);assert.equal(await app.getByRole('button',{name:'Neu laden',exact:true}).evaluate(el=>el===el.getRootNode().activeElement),true);
   await app.getByRole('button',{name:'Neu laden',exact:true}).click();await modal.getByRole('button',{name:'Abbrechen',exact:true}).click();assert.equal(await modal.isVisible(),false);
-  await app.getByRole('button',{name:'Änderungen speichern',exact:true}).click();await app.getByRole('status').filter({hasText:'Rechte gespeichert'}).waitFor();assert.equal(await page.evaluate(()=>window.fixture.saves.at(-1).roles.family.entities['switch.probe']),'control');
-  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();await app.getByRole('searchbox',{name:'Suchen',exact:true}).fill('Licht Paul');assert.equal(await app.locator('#resources .setting-row').count(),1);
+  await app.getByRole('button',{name:'Änderungen speichern',exact:true}).click();await app.getByRole('status').filter({hasText:'Rechte gespeichert'}).waitFor();assert.equal(await page.evaluate(()=>window.fixture.saves.at(-1).roles.family.dashboards['dashboard-parents']),'view');
+  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();await app.getByRole('searchbox',{name:'Dashboards suchen',exact:true}).fill('Eltern');assert.equal(await app.locator('#dashboard-rows .setting-row').count(),1);
   await app.locator('.card-top').getByRole('button',{name:'Prüfen',exact:true}).click();await app.getByRole('button',{name:'HTTP und WebSocket prüfen',exact:true}).click();await app.getByRole('textbox',{name:'Ergebnis',exact:true}).waitFor();assert((await app.getByRole('textbox',{name:'Ergebnis',exact:true}).inputValue()).includes('Dieselbe Prüfinstanz erreicht'));
-  await app.getByRole('button',{name:'Testschalter umschalten',exact:true}).click();assert.equal(await page.evaluate(()=>window.fixture.state),'on');
+  await app.getByRole('button',{name:'Konfiguration abrufen',exact:true}).first().click();
+  assert((await app.getByRole('textbox',{name:'Ergebnis',exact:true}).inputValue()).includes('views'));
+  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();
+  await app.getByRole('textbox',{name:'Name',exact:true}).fill('Vorbereitete Rolle');
+  await app.locator('.card-top').getByRole('button',{name:'Fehler',exact:true}).click();
+  await app.getByRole('button',{name:'Aktualisieren',exact:true}).click();
+  assert((await app.locator('#permission-errors-content').textContent()).includes('Keine')||(await app.locator('#permission-errors-content').textContent()).includes('keine Freigabe'));
+  assert.equal(await app.locator('img').count(),0);
+  assert.equal(await page.evaluate(()=>window.app.policy.roles.family.name),'Vorbereitete Rolle');
+  assert.equal(await page.evaluate(()=>window.app.dirty),true,'Refreshing diagnostics preserves unsaved policy edits');
   await page.evaluate(()=>{window.fixture.status.is_admin=false;window.app.hass={...window.fixture.hass,user:{id:'paul'}};});
-  await app.locator('.card-top').getByRole('button',{name:'Prüfen',exact:true}).waitFor();assert.equal(await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).count(),0);assert.equal(await app.locator('[data-action="save"]').count(),0);
-  await app.getByRole('button',{name:'Testschalter umschalten',exact:true}).click();await app.getByRole('alert').filter({hasText:'Nicht freigegeben'}).waitFor();
-  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(root,'test-results/validation.json'),JSON.stringify({ui:'1.2.1',variants:results,actions:['user_activation','user_assignment','controlled_switch','permission_save','search','escaping','native_dialog_escape','cancel_and_focus','http_ws_check','virtual_switch','child_permissions'],consoleErrors:errors},null,2));
+  await app.locator('.card-top').getByRole('button',{name:'Prüfen',exact:true}).waitFor();assert.equal(await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).count(),0);assert.equal(await app.locator('[data-action="save"]').count(),0);assert.equal(await app.locator('.card-top').getByRole('button',{name:'Fehler',exact:true}).count(),0);
+  await app.getByRole('button',{name:'Konfiguration abrufen',exact:true}).first().click();await app.getByRole('alert').filter({hasText:'Nicht freigegeben'}).waitFor();
+  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(root,'test-results/validation.json'),JSON.stringify({ui:'1.5.2',variants:results,actions:['user_activation','user_assignment','controlled_switch','permission_save','search','escaping','native_dialog_escape','cancel_and_focus','http_ws_check','dashboard_read','admin_error_protocol','child_permissions'],consoleErrors:errors},null,2));
   console.log(JSON.stringify({variants:results.length,themes:2,widths:[1100,430,390,375,320],behavior:'passed'}));
-  if(process.env.CI)for(const name of ['users-1100-light.png','users-390-dark.png','roles-1100-dark.png','roles-390-light.png']){
+  if(process.env.CI)for(const name of ['users-1100-light.png','users-390-dark.png','roles-1100-dark.png','roles-390-light.png','errors-390-dark.png','errors-1100-light.png']){
     const encoded=fs.readFileSync(path.join(root,'test-results',name)).toString('base64'),size=16000,count=Math.ceil(encoded.length/size);
     console.log('FAM_VISUAL_META '+JSON.stringify({name,chunks:count,length:encoded.length}));
     for(let i=0;i<count;i++)console.log('FAM_VISUAL_DATA '+name+' '+i+' '+encoded.slice(i*size,(i+1)*size));
