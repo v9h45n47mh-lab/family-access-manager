@@ -1,4 +1,4 @@
-# Family Access Manager 1.0.1
+# Family Access Manager 1.1.0
 
 Benutzerrollen und Dashboardfreigaben für Home Assistant. Die Oberfläche verwendet vollständig das lokal eingebundene **HA UI Kit 1.6.0**.
 
@@ -65,17 +65,17 @@ Fehler vor der Anmeldung oder beim Laden einer anderen Integration gehören in d
 
 ### Marketplace / HACS
 
-Das Repository `https://github.com/v9h45n47mh-lab/family-access-manager` als benutzerdefiniertes Repository der Kategorie **Integration** hinzufügen. Die reguläre Version **1.0.1** installieren und HA neu starten. Dafür müssen keine Vorabversionen eingeblendet werden. Anschließend unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
+Das Repository `https://github.com/v9h45n47mh-lab/family-access-manager` als benutzerdefiniertes Repository der Kategorie **Integration** hinzufügen. Die reguläre Version **1.1.0** installieren und HA neu starten. Dafür müssen keine Vorabversionen eingeblendet werden. Anschließend unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
 
 Die Quelle ist als benutzerdefiniertes Repository nutzbar; sie wird nicht automatisch Teil des offiziellen Katalogs.
 
 ### Manuell
 
-Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.0.1.zip`.
+Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.1.0.zip`.
 
 ### Falls HACS noch einen Commit-Hash anzeigt
 
-In HACS beim **Family Access Manager** die Repositoryinformationen neu laden und die reguläre Version **1.0.1** installieren. Bis zu dieser Installation kann die bisher installierte Version weiterhin als Commit-Hash erscheinen. Danach HA neu starten und den Browser vollständig neu laden. Falls bisher ausdrücklich der Entwicklungszweig `main` gewählt war, beim erneuten Herunterladen **1.0.1** wählen.
+In HACS beim **Family Access Manager** die Repositoryinformationen neu laden und die reguläre Version **1.1.0** installieren. Bis zu dieser Installation kann die bisher installierte Version weiterhin als Commit-Hash erscheinen. Danach HA neu starten und den Browser vollständig neu laden. Falls bisher ausdrücklich der Entwicklungszweig `main` gewählt war, beim erneuten Herunterladen **1.1.0** wählen.
 
 Der GitHub-Endpunkt `releases/latest` liefert jetzt die reguläre Version. Künftige reguläre Releases werden automatisch ohne Vorabversionsmarkierung und als neueste Version veröffentlicht; Beta-/RC-Versionen bleiben im Vorabkanal.
 
@@ -89,7 +89,7 @@ Die Oberfläche bietet keine Geräteverwaltung und keinen eigenen Dashboardedito
 
 ## Versionen und Entwicklung
 
-[Semantische Versionierung](docs/VERSIONING.md): reguläre Releases als `1.0.0`, `1.0.1`, `1.1.0` usw. Nur gezielte Vorabtests erhalten einen Zusatz wie `1.1.0-beta.1`. Die bisherigen Tags bleiben erhalten.
+[Semantische Versionierung](docs/VERSIONING.md): reguläre Releases als `1.0.0`, `1.1.0`, `1.1.0` usw. Nur gezielte Vorabtests erhalten einen Zusatz wie `1.1.0-beta.1`. Die bisherigen Tags bleiben erhalten.
 
 Die Benutzeransicht enthält nur einen kurzen Hinweis; ausführliche Hinweise und Zugriffsschutz liegen unter dem Zahnrad **Einstellungen**.
 
@@ -113,3 +113,14 @@ python scripts/build_release.py
 ```
 
 Tests ausschließlich mit temporären Konfigurationen ausführen. Ein produktives HA-Konfigurationsverzeichnis ist kein Testverzeichnis.
+
+
+## Zentrale Rollenrechte
+
+Acht eigene Anwendungstabs: Light Manager, Shutter Manager, Essensplaner, Hausarbeiten, Gartenarbeit, Spülmaschine, Music Manager und Wecker. Mehrfachrollen sind in der Benutzerverwaltung auswählbar. Fehlgeschlagene Anwendungsprüfungen erscheinen im bestehenden Fehlerprotokoll. Rollen werden weiterhin erst nach Bestätigung gelöscht.
+
+Berechtigungen werden jetzt in **Family Access → Anwendung → Rolle** verwaltet. Benutzer können mehrere Rollen erhalten; ihre Freigaben ergänzen sich. Vorhandene Anwendungsrechte werden einmalig in Rollen mit dem Zusatz „übernommen“ importiert und den bisherigen Benutzern zugeordnet. Dashboardfreigaben und die Aktivierung der Dashboardnavigation werden dadurch nicht verändert.
+
+Zum Entziehen eines Rechts alle zugewiesenen Rollen einschließlich übernommener Rollen prüfen. Neue Benutzer erhalten nach der Übernahme keine automatischen Anwendungsrechte. Echte HA-Administratoren behalten Vollzugriff zur Wiederherstellung. Geräte-, Eigentümer- und externe Kontoberechtigungen gelten zusätzlich; eine Rolle erzeugt keine HA-Administratorrechte.
+
+**Aktualisierung:** zuerst Family Access Manager 1.1.0 oder neuer, danach die beteiligten Anwendungen aktualisieren und Home Assistant neu starten. Solange Family Access nicht eingerichtet ist, bleibt die bisherige Rechtevergabe erhalten. Ist Family Access eingerichtet, aber nicht verfügbar oder zu alt, werden Anwendungsaktionen für normale Benutzer abgelehnt. Lokale Benutzer-/Personen-, Geräte- und Musikkontozuordnungen bleiben für Identität und Eigentum erhalten; Rechte werden zentral vergeben.
