@@ -10,4 +10,6 @@ Gültige Rollen, Dashboardfreigaben, Aktivierungen und persönliche Seitenleiste
 
 In HACS die Repositoryinformationen neu laden und **1.0.0** installieren. Falls bisher `main` gewählt war, beim erneuten Herunterladen ausdrücklich **1.0.0** auswählen. Die bisher installierte Version kann bis zur Installation weiterhin als Hash erscheinen. Danach HA neu starten und den Browser vollständig neu laden.
 
+Geprüft: **105 HA-Tests, 25 aktuelle Core-Prüfungen und 70 Browservarianten** bei Desktop-/Mobilbreiten und hellen/dunklen Themes.
+
 [Prüfnachweis und Umfang](https://github.com/v9h45n47mh-lab/family-access-manager/blob/v1.0.0/docs/TESTERGEBNISSE.md). Der dokumentierte Schutzumfang bleibt unverändert.
