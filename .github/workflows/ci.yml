@@ -29,13 +29,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: v9h45n47mh-lab/light-manager
-          ref: 12ea1f93ce11d5d5ad6fd83a9f7afc958fb6d5a2
+          ref: 9d60f44f4242886c0cab2e3c976aa246f4286877
           path: .test-deps/light-manager
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: v9h45n47mh-lab/shutter-manager
-          ref: 723658053afc7650a1b560db6c42fffd655f8c57
+          ref: 1b9d8af9a3028a77fa78f0013fd08eb1eed8a0dd
           path: .test-deps/shutter-manager
           persist-credentials: false
       - uses: actions/checkout@v4
