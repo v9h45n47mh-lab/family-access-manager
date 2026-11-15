@@ -5,16 +5,16 @@
 1. Als Administrator eine Rolle „Zugriffstest“ anlegen.
 2. Ein Dashboard auf **Freigegeben**, die übrigen auf **Kein Zugriff** setzen.
 3. Unter **Benutzer** beim Testkonto Family Access einschalten, die Rolle wählen und speichern. Das Testkonto darf kein HA-Administrator und nicht der Eigentümer sein.
-4. **Dashboard-Konfigurationen sperren** einschalten und speichern.
+4. Unter **Einstellungen → Dashboard-Konfigurationen sperren** einschalten und speichern.
 5. Mit dem Testkonto in einem separaten Browserprofil anmelden. Nach einem Update HA neu starten und den Testbrowser vollständig neu laden.
 
 ## Erwartete Ergebnisse
 
 | Prüfung | Erwartung | Lokal | Nabu Casa |
 |---|---|---|---|
-| Seitenleiste | Nur freigegebene Dashboards, Family Access und feste Konto-/Benachrichtigungselemente | Offen | Offen |
+| Seitenleiste | Nur freigegebene Dashboards und feste Konto-/Benachrichtigungselemente; Family Access fehlt | Offen | Offen |
 | Freigegebenes Dashboard öffnen | Anzeige möglich; Bedienung folgt den nativen HA-Rechten | Offen | Offen |
-| Family Access öffnen | Nur Prüfen und Umfang, keine Verwaltung und kein Fehlerprotokoll | Offen | Offen |
+| Family Access als Testkonto aufrufen | Kein Seitenleisteneintrag; direkter Panelaufruf abgelehnt | Offen | Offen |
 | HTTP und WebSocket prüfen | Dieselbe Prüfinstanz erreicht | Offen | Offen |
 | Nicht freigegebene Konfiguration direkt per WebSocket abfragen | Abgelehnt; als Administrator Fehler mit Benutzer, Ziel und Grund sichtbar | Offen | Offen |
 | Freigabe bei offenem Browser ändern und speichern | Seitenleiste aktualisiert sich; neue Konfigurationsanfrage verwendet aktuelle Rechte | Offen | Offen |

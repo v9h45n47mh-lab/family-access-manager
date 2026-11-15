@@ -1,13 +1,15 @@
-# Family Access Manager 1.0.0-beta.1
+# Family Access Manager 1.0.0-beta.2
 
-Benutzerrollen und Dashboardfreigaben für Home Assistant. Die Oberfläche verwendet vollständig das lokal eingebundene **HA UI Kit 1.5.2**.
+Benutzerrollen und Dashboardfreigaben für Home Assistant. Die Oberfläche verwendet vollständig das lokal eingebundene **HA UI Kit 1.6.0**.
+
+Family Access ist eine reine Verwaltungsoberfläche für Administratoren und Eigentümer. Normale Benutzer sehen keinen Family-Access-Eintrag; auch der direkte Panel-Start ist serverseitig geschützt.
 
 ## Dashboardzugriff einrichten
 
 1. Unter **Rollen** eine Rolle anlegen und die gewünschten Dashboards auf **Freigegeben** setzen.
 2. Unter **Benutzer** das Konto aktivieren, die Rolle wählen und **Änderungen speichern**.
-3. Die Seitenleiste zeigt diesem Konto nur freigegebene Dashboards sowie Family Access und die eigenen Konto-/internen Routen. Allgemeine Panels wie Verlauf, Kalender und Medien werden ausgeblendet; das feste Konto- und Benachrichtigungsmenü bleibt bestehen.
-4. Für direkte Dashboard-Konfigurationsanfragen zusätzlich **Dashboard-Konfigurationen sperren** einschalten und speichern.
+3. Die Seitenleiste zeigt diesem Konto nur freigegebene Dashboards sowie die eigenen Konto-/internen Routen. Allgemeine Panels wie Verlauf, Kalender und Medien werden ausgeblendet; das feste Konto- und Benachrichtigungsmenü bleibt bestehen.
+4. Für direkte Dashboard-Konfigurationsanfragen unter **Einstellungen → Dashboard-Konfigurationen sperren** die Sperre einschalten und speichern.
 5. Mit einem separaten Testkonto prüfen. Nach einem Update Home Assistant neu starten und den Browser vollständig neu laden.
 
 Eine Rolle lässt sich vorbereiten, ohne das Konto zu aktivieren. Beim Ausschalten bleibt die Rolle gespeichert und die normale HA-Navigation wird wiederhergestellt. Administratoren und Eigentümer behalten Vollzugriff.
@@ -31,7 +33,7 @@ Fehler vor der Anmeldung oder beim Laden einer anderen Integration gehören in d
 - Eigene Dashboard-Anfragen im Backend prüfen; identische Prüfinstanz für HTTP und WebSocket.
 - Optional `lovelace/config`, `lovelace/config/save` und `lovelace/config/delete` prüfen. Native HA-Administratorprüfungen bleiben erhalten.
 - Revisionsprüfung gegen gleichzeitiges Überschreiben, gespeicherte Rollen und Aktivierungen ohne Datenverlust übernehmen.
-- Gemeinsame Komponenten für Kopf, Navigation, Listen, Auswahlfelder, Schalter, Buttons, Dialoge, Meldungen und Protokoll. Keine lokalen CSS-Überschreibungen oder CDN-Abhängigkeiten.
+- Kompakte gemeinsame Benutzerzeilen für Name, Rolle und Aktivierung; mobil zusammengehörig untereinander. Gemeinsame Komponenten für Kopf, Navigation, Listen, Auswahlfelder, Schalter, Buttons, Dialoge, Meldungen und Protokoll. Keine lokalen CSS-Überschreibungen oder CDN-Abhängigkeiten.
 
 ## Installation
 
@@ -43,7 +45,7 @@ Die Quelle ist als benutzerdefiniertes Repository nutzbar; sie wird nicht automa
 
 ### Manuell
 
-Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.0.0-beta.1.zip`.
+Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.0.0-beta.2.zip`.
 
 ## Schutzumfang und Grenzen
 
@@ -56,6 +58,8 @@ Die Oberfläche bietet keine Geräteverwaltung und keinen eigenen Dashboardedito
 ## Versionen und Entwicklung
 
 [Semantische Versionierung](docs/VERSIONING.md): `MAJOR.MINOR.PATCH`, Vorabstände als `1.0.0-beta.1`, `1.0.0-beta.2` usw. Die bisherigen Tags bleiben erhalten.
+
+Die Benutzeransicht enthält nur einen kurzen Hinweis; ausführliche Hinweise und Zugriffsschutz liegen unter dem Zahnrad **Einstellungen**.
 
 Die pytest-Suite verwendet HA 2026.10.4; ein unabhängiger Installations-/API-Test verwendet Core 2026.11.1. Die Browserprüfung vergleicht die tatsächlich gerenderten Komponenten direkt mit dem gepinnten UI Kit bei 1100/430/390/375/320 px und hellen/dunklen Themes.
 

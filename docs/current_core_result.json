@@ -10,6 +10,7 @@
     "controller_really_toggles_virtual_switch": true,
     "rest_and_websocket_share_policy_instance": true,
     "native_dashboard_gate_on_existing_connection": true,
+    "family_panel_bootstrap_admin_only": true,
     "error_log_admin_only_and_has_reasons": true,
     "dashboard_snapshot_has_no_device_catalogs": true,
     "disabled_user_keeps_role_without_own_api_grants": true,
