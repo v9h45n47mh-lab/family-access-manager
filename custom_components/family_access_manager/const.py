@@ -1,7 +1,7 @@
 """Constants for Family Administration."""
 
 DOMAIN = "family_access_manager"
-VERSION = "1.5.0"
+VERSION = "1.6.0"
 PANEL_PATH = "family-access-manager"
 STORAGE_VERSION = 1
 STORAGE_KEY = DOMAIN

@@ -1,4 +1,4 @@
-# Family Administration 1.5.0
+# Family Administration 1.6.0
 
 **Administration** steht ganz links und bündelt Benutzer, Urlaubsmodus und Rollenverwaltung. Neue Darstellungen erhalten direkt beim Anlegen einen Namen. Die gemeinsame Versionszeile steht ganz unten in den Einstellungen. Der separate Zugriffsschutz-Schalter entfällt; direkte Dashboard-Konfigurationsanfragen werden für aktiv eingeschränkte Konten automatisch gegen ihre Freigaben geprüft.
 
@@ -9,6 +9,8 @@ Manuell sortierbare Einträge werden am gemeinsamen Sortiergriff gedrückt gehal
 HA-Administratoren erhalten unter Administration → Benutzer ebenfalls eine eigene Darstellung. Diese bestimmt sichtbare Dashboards; Family Administration und HA-Systembereiche bleiben erreichbar. Native Administratorrechte bleiben vollständig erhalten. Die bisherige Standarddarstellung bleibt beim Update bestehen, bis ausdrücklich eine Darstellung zugewiesen wird. Die Reihenfolge lässt sich anschließend auf die zugeordneten Admins übernehmen.
 
 Zentrale Verwaltung für Dashboard-Darstellungen, App-Rollen und Urlaubsmodus in Home Assistant. Die Oberfläche verwendet ausschließlich die mitgelieferten Originalkomponenten und Styles aus **HA UI Kit 1.7.0**.
+
+Spülmaschine: **Eigenen Ausräumdienst bestätigen** ist unabhängig von Verlauf und Statistik. Wecker: **Eigenen Wecker verwalten** bündelt eigene Ansicht und Bedienung; die Verwaltung aller Benutzer bleibt separat. Frühere reine Wecker-Leserechte werden beim Update nicht zu Änderungsrechten erweitert.
 
 ## Darstellung und App-Rolle getrennt zuweisen
 
@@ -63,11 +65,11 @@ Ganz unten unter **Einstellungen** stehen Oberfläche, Integration und HA UI Kit
 
 ## Installation und Update
 
-Das bestehende Repository `https://github.com/v9h45n47mh-lab/family-access-manager` in HACS als **Integration** verwenden. Version **1.5.0** installieren, HA neu starten und Browser/App vollständig neu laden. Bestehende Installationen erhalten den neuen Anzeigenamen automatisch. Der technische Integrationspfad und die verbundenen App-Protokolle bleiben kompatibel.
+Das bestehende Repository `https://github.com/v9h45n47mh-lab/family-access-manager` in HACS als **Integration** verwenden. Version **1.6.0** installieren, HA neu starten und Browser/App vollständig neu laden. Bestehende Installationen erhalten den neuen Anzeigenamen automatisch. Der technische Integrationspfad und die verbundenen App-Protokolle bleiben kompatibel.
 
 Bei Erstinstallation unter **Einstellungen → Geräte & Dienste → Integration hinzufügen → Family Administration** einrichten. Die Quelle ist ein benutzerdefiniertes Repository und nicht automatisch Teil des offiziellen Katalogs.
 
-Für die manuelle Installation aus [GitHub Releases](https://github.com/v9h45n47mh-lab/family-access-manager/releases) `family_access_manager.zip` laden und `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren. Das vollständige Quellpaket heißt `Family_Administration_1.5.0.zip`. HACS bei alten Commit-Hash-Anzeigen neu laden und ausdrücklich die reguläre Version wählen.
+Für die manuelle Installation aus [GitHub Releases](https://github.com/v9h45n47mh-lab/family-access-manager/releases) `family_access_manager.zip` laden und `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren. Das vollständige Quellpaket heißt `Family_Administration_1.6.0.zip`. HACS bei alten Commit-Hash-Anzeigen neu laden und ausdrücklich die reguläre Version wählen.
 
 ## Schutzumfang
 
