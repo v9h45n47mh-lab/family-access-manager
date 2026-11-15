@@ -180,7 +180,7 @@ class Runtime:
                 "sidebar_filter": self.sidebar.available and self.policy.presentation_managed(actor),
                 "device_control": self.policy.config["device_control"],
                 "probe_entity_id": self.probe_entity_id,
-                "scope": "prototype_api_and_optional_dashboard_config_gate",
+                "scope": "dashboard_and_application_permissions",
                 "general_ha_api_protected": False,
                 "live_nabu_casa_verified": False,
                 "dashboards": [d for d in self.dashboard_catalog() if self.policy.dashboard(actor, d["id"])],

@@ -102,7 +102,9 @@ async def test_existing_connection_observes_revocation(runtime, hass, child, gra
     assert not (await ws.receive_json())["success"]
 
 
-async def test_dashboard_gate_disabled_changes_nothing(runtime, hass, child, grant, hass_ws_client):
+async def test_disabled_user_keeps_native_dashboard_access(runtime, hass, child, grant, hass_ws_client):
+    grant["enabled_users"] = []
+    runtime.policy = Policy(grant)
     ws = await hass_ws_client(hass, access_token=child[1])
     await ws.send_json({"id": 1, "type": "lovelace/config", "url_path": "dashboard-private"})
     assert (await ws.receive_json())["success"]

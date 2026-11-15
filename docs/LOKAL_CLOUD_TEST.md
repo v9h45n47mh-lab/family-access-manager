@@ -2,10 +2,10 @@
 
 ## Vorbereitung
 
-1. Als Administrator eine Rolle „Zugriffstest“ anlegen.
-2. Ein Dashboard auf **Freigegeben**, die übrigen auf **Kein Zugriff** setzen.
-3. Unter **Benutzer** beim Testkonto Family Access einschalten, die Rolle wählen und speichern. Das Testkonto darf kein HA-Administrator und nicht der Eigentümer sein.
-4. Unter **Einstellungen → Dashboard-Konfigurationen sperren** einschalten und speichern.
+1. Als HA-Administrator unter **Dashboards** eine Darstellung „Zugriffstest“ anlegen und direkt benennen.
+2. In dieser Darstellung ein Dashboard freigeben und die übrigen nicht wählen.
+3. Unter **Administration → Benutzer** beim Testkonto die Darstellung zuweisen, den Dashboardzugriff einschalten und speichern. Das Testkonto darf kein HA-Administrator und nicht der Eigentümer sein.
+4. Der Schutz direkter Dashboard-Konfigurationsanfragen gilt automatisch für dieses aktiv eingeschränkte Konto. Es gibt keinen zusätzlichen Zugriffsschutz-Schalter.
 5. Mit dem Testkonto in einem separaten Browserprofil anmelden. Nach einem Update HA neu starten und den Testbrowser vollständig neu laden.
 
 ## Erwartete Ergebnisse
