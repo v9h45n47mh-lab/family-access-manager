@@ -1,5 +1,13 @@
 # Änderungen
 
+## 0.4.0 – 15.11.2026
+
+- Native Seitenleistenliste je aktiviertem Benutzer nach Dashboardrechten filtern.
+- Nicht freigegebene Dashboards und allgemeine Panels ausblenden; Profil und Family Access beibehalten.
+- Bestehende Browser über panels_updated nach erfolgreichen Rechteänderungen aktualisieren.
+- HA-eigene Administratorprüfungen und Panelüberschreibungen beibehalten; Originalhandler beim Entladen wiederherstellen.
+- Zusatztests für native Panelantworten, Benutzertrennung, Aktualisierung und Entladen.
+
 ## 0.3.0 – 15.11.2026
 
 - Aktivierung von Family Access getrennt von der Rollenzuordnung je Benutzer.

@@ -19,6 +19,7 @@ import homeassistant  # Must precede libraries importing the pre-2026.11 httpx.
 from aiohttp import ClientSession
 from homeassistant import bootstrap, loader
 from homeassistant.auth.const import GROUP_ID_ADMIN, GROUP_ID_USER
+from homeassistant.components import frontend, websocket_api
 from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
 
@@ -53,6 +54,11 @@ async def main():
             await hass.async_block_till_done()
             runtime = hass.data["family_access_manager"]
             assert runtime.probe_entity_id and runtime.gate.available
+            assert runtime.sidebar.available
+            original_panels_handler = runtime.sidebar.original
+            for path in ("dashboard-family-allowed", "dashboard-family-private"):
+                frontend.async_register_built_in_panel(hass, "lovelace", sidebar_title=path, frontend_url_path=path)
+            frontend.async_register_built_in_panel(hass, "history", sidebar_title="History fixture", frontend_url_path="family-test-history")
             results["checks"]["installation_and_virtual_switch"] = True
 
             from custom_components.family_access_manager.policy import Policy
@@ -60,6 +66,7 @@ async def main():
             policy["bindings"][child.id] = ["family"]
             policy["enabled_users"] = [child.id]
             policy["roles"]["family"]["entities"][runtime.probe_entity_id] = "view"
+            policy["roles"]["family"]["dashboards"]["dashboard-family-allowed"] = "view"
             runtime.policy = Policy(policy)
             refresh = await hass.auth.async_create_refresh_token(child, client_id="https://example.com")
             token = hass.auth.async_create_access_token(refresh)
@@ -132,6 +139,31 @@ async def main():
                     denied = await ws.receive_json()
                     assert not denied["success"] and denied["error"]["code"] == "unauthorized"
                     results["checks"]["per_user_activation_on_existing_connection"] = True
+                    await ws.send_json({"id": 6, "type": "get_panels"})
+                    visible = (await ws.receive_json())["result"]
+                    assert "dashboard-family-allowed" in visible
+                    assert "dashboard-family-private" not in visible
+                    assert "family-test-history" not in visible
+                    assert "family-access-manager" in visible
+                    async with session.ws_connect(base + "/api/websocket") as admin_ws:
+                        assert (await admin_ws.receive_json())["type"] == "auth_required"
+                        await admin_ws.send_json({"type": "auth", "access_token": owner_headers["Authorization"][7:]})
+                        assert (await admin_ws.receive_json())["type"] == "auth_ok"
+                        await admin_ws.send_json({"id": 1, "type": "get_panels"})
+                        admin_panels = (await admin_ws.receive_json())["result"]
+                        assert {"dashboard-family-allowed", "dashboard-family-private", "family-test-history"} <= admin_panels.keys()
+                    results["checks"]["native_sidebar_filtering_and_admin_isolation"] = True
+                    await ws.send_json({"id": 7, "type": "subscribe_events", "event_type": "panels_updated"})
+                    assert (await ws.receive_json())["success"]
+                    changed = deepcopy(runtime.policy.config)
+                    changed["roles"]["family"]["dashboards"] = {}
+                    async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action": "save_policy", "payload": changed}) as response:
+                        assert response.status == 200, await response.text()
+                    event = await ws.receive_json()
+                    assert event["type"] == "event" and event["event"]["event_type"] == "panels_updated"
+                    await ws.send_json({"id": 8, "type": "get_panels"})
+                    assert "dashboard-family-allowed" not in (await ws.receive_json())["result"]
+                    results["checks"]["native_sidebar_refresh_on_open_connection"] = True
             # Inspect the installed official adapter without importing unrelated
             # Alexa/camera dependencies. This is NOT a live relay test.
             cloud_source = (Path(homeassistant.__file__).parent / "components/cloud/client.py").read_text()
@@ -147,6 +179,9 @@ async def main():
             entry = created["result"]
             assert await hass.config_entries.async_unload(entry.entry_id)
             assert "family_access_manager" not in hass.data
+            assert hass.data[websocket_api.DOMAIN]["get_panels"] is original_panels_handler
+            assert not runtime.sidebar.available
+            results["checks"]["unload_restores_native_panels_handler"] = True
             results["checks"]["clean_unload"] = True
             assert await hass.config_entries.async_setup(entry.entry_id)
             await hass.async_block_till_done()
@@ -155,6 +190,7 @@ async def main():
             assert reloaded.policy.config["bindings"][child.id] == ["family"]
             assert reloaded.policy.config["enabled_users"] == [child.id]
             assert reloaded.gate.available
+            assert reloaded.sidebar.available
             results["checks"]["policy_persists_across_reload"] = True
             assert await hass.config_entries.async_unload(entry.entry_id)
         finally:

@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 from homeassistant.auth.const import GROUP_ID_USER
-from homeassistant.components import websocket_api
+from homeassistant.components import frontend, websocket_api
 from homeassistant.components.lovelace.const import LOVELACE_DATA
 from homeassistant.components.lovelace import websocket as lovelace_ws
 from homeassistant.setup import async_setup_component
@@ -37,7 +37,12 @@ async def runtime(hass):
     for handler in (lovelace_ws.websocket_lovelace_config, lovelace_ws.websocket_lovelace_save_config, lovelace_ws.websocket_lovelace_delete_config):
         websocket_api.async_register_command(hass, handler)
     assert instance.gate.install(hass.data[websocket_api.DOMAIN])
+    hass.data.setdefault(frontend.DATA_PANELS, {})
+    hass.data.setdefault(frontend.DATA_PANELS_CONFIG, {})
+    websocket_api.async_register_command(hass, frontend.websocket_get_panels)
+    assert instance.sidebar.install(hass.data[websocket_api.DOMAIN])
     yield instance
+    instance.sidebar.uninstall()
     instance.gate.uninstall()
     hass.data.pop(DOMAIN, None)
 

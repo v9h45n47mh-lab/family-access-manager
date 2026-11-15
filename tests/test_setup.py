@@ -15,6 +15,7 @@ async def test_entry_setup_probe_control_and_unload(hass, enable_custom_integrat
     await hass.async_block_till_done()
     runtime = hass.data[DOMAIN]
     assert runtime.gate.available
+    assert runtime.sidebar.available
     assert runtime.probe_entity_id is not None
     assert hass.states.get(runtime.probe_entity_id).state == "off"
     config = deepcopy(runtime.policy.config)
@@ -28,9 +29,11 @@ async def test_entry_setup_probe_control_and_unload(hass, enable_custom_integrat
     })
     assert hass.states.get(runtime.probe_entity_id).state == "on"
     gate = runtime.gate
+    sidebar = runtime.sidebar
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert DOMAIN not in hass.data
     assert not gate.available
+    assert not sidebar.available
 
 
 async def test_single_config_flow(hass, enable_custom_integrations):

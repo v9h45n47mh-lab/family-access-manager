@@ -29,6 +29,8 @@ async def async_setup_entry(hass, entry):
         runtime.gate.install(hass.data.get(websocket_api.DOMAIN, {}))
         if runtime.policy.config["native_dashboard_gate"] and not runtime.gate.available:
             raise RuntimeError("Die gespeicherte Dashboard-Sperre kann mit dieser HA-Version nicht eingerichtet werden.")
+        if not runtime.sidebar.install(hass.data.get(websocket_api.DOMAIN, {})):
+            raise RuntimeError("Die Seitenleistenfilterung kann mit dieser HA-Version nicht eingerichtet werden.")
         await panel_custom.async_register_panel(
             hass, frontend_url_path=PANEL_PATH,
             webcomponent_name="family-access-panel", sidebar_title="Family Access",
@@ -38,6 +40,7 @@ async def async_setup_entry(hass, entry):
         )
         await hass.config_entries.async_forward_entry_setups(entry, [Platform.SWITCH])
     except Exception:
+        runtime.sidebar.uninstall()
         runtime.gate.uninstall()
         frontend.async_remove_panel(hass, PANEL_PATH)
         hass.data.pop(DOMAIN, None)
@@ -49,6 +52,7 @@ async def async_unload_entry(hass, entry):
     if not await hass.config_entries.async_unload_platforms(entry, [Platform.SWITCH]):
         return False
     runtime = hass.data.pop(DOMAIN)
+    runtime.sidebar.uninstall()
     runtime.gate.uninstall()
     frontend.async_remove_panel(hass, PANEL_PATH)
     return True

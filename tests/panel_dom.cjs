@@ -8,7 +8,7 @@ vm.runInContext('const esc=escapeHtml;',context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family_access_manager/frontend/panel.js'),'utf8').replace(/^import[^\n]*\n/,''),context);
 const panel=window.document.querySelector('family-access-panel');
 const policy={revision:0,native_dashboard_gate:false,device_control:false,roles:{family:{name:'Kinder',dashboards:{'dashboard-paul':'view'},entities:{},areas:{},labels:{}}},bindings:{paul:['family']},enabled_users:['paul']};
-const status={is_admin:true,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'0.3.0',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
+const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'0.4.0',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
 const snapshot={policy,users:[{id:'manuel',name:'Manuel',admin:true,active:true},{id:'paul',name:'Paul',admin:false,active:true}],dashboards:[{id:'dashboard-paul',name:'Paul'}],entities:[{id:'switch.probe',name:'Testschalter'},{id:'light.paul',name:'<img src=x onerror=alert(1)>'}],areas:[],labels:[],events:[]};
 let saves=0;
 snapshot.users.push({id:'test',name:'Testuser',admin:false,active:true});

@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 import uuid
 
 from homeassistant.core import Context
+from homeassistant.const import EVENT_PANELS_UPDATED
 from homeassistant.helpers import area_registry, device_registry, entity_registry, label_registry
 from homeassistant.helpers.storage import Store
 
@@ -14,6 +15,7 @@ from .const import DOMAIN, STORAGE_KEY, STORAGE_VERSION, VERSION
 from .gate import DashboardGate, principal
 from .policy import InvalidPolicy, Policy, Resource, default_policy, migrate_policy, validate_policy
 from .services import validate_service
+from .sidebar import SidebarFilter
 
 
 class AccessDenied(Exception):
@@ -32,6 +34,7 @@ class Runtime:
         self.lock = asyncio.Lock()
         self.events = deque(maxlen=200)
         self.gate = DashboardGate(self)
+        self.sidebar = SidebarFilter(self)
         self.probe_entity_id = None
         self.instance_id = uuid.uuid4().hex
 
@@ -103,6 +106,8 @@ class Runtime:
                 "roles": [r["name"] for r in self.policy.roles(actor)],
                 "native_dashboard_gate": self.policy.config["native_dashboard_gate"],
                 "gate_available": self.gate.available,
+                "sidebar_available": self.sidebar.available,
+                "sidebar_filter": self.sidebar.available and self.policy.managed(actor),
                 "device_control": self.policy.config["device_control"],
                 "probe_entity_id": self.probe_entity_id,
                 "scope": "prototype_api_and_optional_dashboard_config_gate",
@@ -134,6 +139,8 @@ class Runtime:
                 raise InvalidPolicy("Nur vorhandene persönliche Konten ohne Administratorrechte können eingeschränkt werden.")
             if candidate["native_dashboard_gate"] and not self.gate.available:
                 raise InvalidPolicy("Die Dashboard-Prüfung ist mit dieser HA-Version nicht verfügbar.")
+            if candidate["enabled_users"] and not self.sidebar.available:
+                raise InvalidPolicy("Die Seitenleistenfilterung ist mit dieser HA-Version nicht verfügbar.")
             async with self.lock:
                 if candidate["revision"] != self.policy.config["revision"]:
                     raise Conflict("Die Rechte wurden zwischenzeitlich geändert. Bitte neu laden.")
@@ -141,6 +148,8 @@ class Runtime:
                 next_policy = Policy(candidate)
                 await self.store.async_save(next_policy.config)
                 self.policy = next_policy
+            # HA's panel collection refetches get_panels for each connection.
+            self.hass.bus.async_fire(EVENT_PANELS_UPDATED)
             self.audit(user.id, "save_policy", "configuration", True)
             return {"revision": self.policy.config["revision"]}
         if action == "read_entity":

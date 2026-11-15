@@ -15,6 +15,7 @@ Ziel: dieselben erwarteten Erlaubnisse und Ablehnungen lokal und über Nabu Casa
 
 | Prüfung | Erwartung | Lokal | Nabu Casa |
 |---|---|---|---|
+| Seitenleiste des aktivierten Testkontos | Nur freigegebene Dashboards, Family Access und Kontobestandteile; keine anderen allgemeinen Panels | Offen | Offen |
 | Family Access öffnen | Nur Prüfen und Umfang; keine Benutzer-/Rollenverwaltung | Offen | Offen |
 | HTTP und WebSocket prüfen | Beide erreichen dieselbe Prüfinstanz | Offen | Offen |
 | Testschalter anzeigen | Erlaubt | Offen | Offen |
@@ -26,6 +27,7 @@ Ziel: dieselben erwarteten Erlaubnisse und Ablehnungen lokal und über Nabu Casa
 | Family Access für das Testkonto ausschalten und speichern | Rolle bleibt gespeichert; native Dashboard-Sperre gilt für dieses Konto nicht mehr, eigene Gerätefunktionen verweigern ohne Aktivierung | Offen | Offen |
 | Family Access wieder einschalten und speichern | Gespeicherte Rolle gilt bei der nächsten Anfrage wieder | Offen | Offen |
 | Zweites normales Konto ohne Aktivierung verwenden | Native Dashboard-Konfigurationsabfragen werden durch Family Access nicht eingeschränkt | Offen | Offen |
+| Dashboardfreigabe bei offenem Browser ändern und speichern | Seitenleisteneinträge aktualisieren sich; Administratoransicht unverändert | Offen | Offen |
 | Als Administrator weiterarbeiten | Vollzugriff bleibt erhalten | Offen | Offen |
 
 Für die Cloudprüfung ausdrücklich die **Nabu-Casa-Adresse** verwenden. In der Companion-App kann eine interne URL automatisch bevorzugt werden. Der Test zeigt die aufrufende Adresse an; eine allgemeine Erfolgsmeldung im Heimnetz beweist noch keinen Cloudzugriff.

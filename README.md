@@ -1,4 +1,4 @@
-# Family Access Manager 0.3.0
+# Family Access Manager 0.4.0
 
 Installierbare Prüfversion einer Benutzerberechtigungsverwaltung für Home Assistant.
 
@@ -16,6 +16,14 @@ Unter **Benutzer** kannst du **Family Access für …** pro Konto einschalten. W
 
 Neue Benutzer sind ausgeschaltet. Beim Update werden bisher verwaltete Benutzer automatisch aktiviert, damit vorhandene Einschränkungen erhalten bleiben. Eine aktivierte Zuordnung mit **Kein Zugriff** hat weiterhin keine Freigaben. Für native Dashboard-Konfigurationsanfragen muss zusätzlich der globale Schalter **Dashboard-Konfigurationen sperren** eingeschaltet sein; dieser greift nur bei aktivierten Benutzern.
 
+## Seitenleiste ab 0.4.0
+
+Für aktivierte Benutzer liefert HA nur die freigegebenen Dashboards sowie Family Access und die eigenen Profil-/internen Routen. Andere allgemeine Panels wie Verlauf, Kalender, Medien und zusätzliche Integrationspanels werden ausgeblendet. Das native Kontomenü und der Benachrichtigungsbereich bleiben bestehen. Administratoren und Benutzer ohne aktiviertes Family Access behalten ihre HA-Panelliste.
+
+Die Filterung gilt unabhängig vom globalen Dashboard-Sperrschalter. Nach dem Speichern informiert HA die offenen Browser über `panels_updated`; sie laden ihre Einträge neu. Beim ersten Update HA neu starten und den Browser vollständig neu laden. Eine bisherige, nicht freigegebene Startseite kann danach als nicht verfügbar erscheinen; dann ein freigegebenes Dashboard öffnen. Es werden keine Startseiten- oder anderen Benutzerpräferenzen verändert.
+
+Für direkte Konfigurationsanfragen bleibt die optionale Dashboard-Sperre zuständig. Die Seitenleistenfilterung erteilt keine zusätzlichen Rechte und ersetzt keine allgemeine API-Absicherung.
+
 ## Enthalten
 
 - Vorhandene HA-Benutzer verwenden; Einstellungen ausschließlich für echte HA-Administratoren und den Eigentümer.
@@ -32,7 +40,7 @@ Neue Benutzer sind ausgeschaltet. Beim Update werden bisher verwaltete Benutzer 
 ### Über Marketplace / HACS
 
 1. `https://github.com/v9h45n47mh-lab/family-access-manager` als **benutzerdefiniertes Repository** mit der Kategorie **Integration** hinzufügen.
-2. Da 0.3.0 ausdrücklich als Vorabversion veröffentlicht wird, gegebenenfalls Vorab-/Betaversionen in der Versionsauswahl anzeigen lassen.
+2. Da 0.4.0 ausdrücklich als Vorabversion veröffentlicht wird, gegebenenfalls Vorab-/Betaversionen in der Versionsauswahl anzeigen lassen.
 3. **Family Access Manager (Prüfversion)** herunterladen und HA neu starten.
 4. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
 
@@ -40,7 +48,7 @@ Das Repository ist als benutzerdefinierte Quelle nutzbar; es ist nicht automatis
 
 ### Manuell über GitHub
 
-Im [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) steht `family_access_manager.zip` als Installationspaket bereit. Das vollständige Quellpaket heißt `Family_Access_Manager_0.3.0_Prototyp.zip`.
+Im [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) steht `family_access_manager.zip` als Installationspaket bereit. Das vollständige Quellpaket heißt `Family_Access_Manager_0.4.0_Prototyp.zip`.
 
 1. ZIP entpacken. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren.
 2. Home Assistant neu starten.
@@ -64,7 +72,7 @@ Es werden keine Ports, Netzwerkeinstellungen, HA-Gruppen oder vorhandenen Tokens
 
 ## Bedeutung der Rechte
 
-| Auswahl | Wirkung in 0.3.0 |
+| Auswahl | Wirkung in 0.4.0 |
 |---|---|
 | Dashboard: Anzeigen | Konfiguration über die eigene API abrufen; bei eingeschalteter Dashboard-Sperre auch native Konfigurationsabfragen zulassen. |
 | Dashboard: Bedienen | Schließt Anzeigen ein; tatsächliche Bedienung braucht zusätzlich eine Gerätefreigabe. |
@@ -83,7 +91,7 @@ Die Berechtigung für eine Entität gilt innerhalb dieser API auf allen Dashboar
 
 ## Grenzen
 
-- Die Seitenleiste wird noch nicht benutzerspezifisch gefiltert.
+- Die Seitenleistenfilterung entfernt Panels aus der Navigation aktivierter Benutzer. Sie sperrt keine allgemeinen HA-Geräte-APIs und blendet keine festen Konto-/Benachrichtigungselemente aus.
 - Die optionale native Sperre schützt Dashboard-Konfigurationsanfragen. Sie entfernt keine zuvor im Browser gespeicherten Inhalte und sperrt nicht automatisch Daten über andere HA-APIs.
 - Es wird kein Benutzer gegenüber HA als Administrator ausgegeben. Native Administratorprüfungen bleiben bestehen.
 - Ein freigegebenes Dashboard erteilt niemals automatisch Zugriff auf die darauf genannten Geräte.
@@ -96,7 +104,7 @@ Die Berechtigung für eine Entität gilt innerhalb dieser API auf allen Dashboar
 
 1. Verhalten der ersten Prüfversion lokal und über die echte Nabu-Casa-Verbindung bestätigen.
 2. Native Entitätsrechte und weitere HA-Endpunkte gezielt absichern, einschließlich Zustandsabonnements und alternativer Schaltwege. Dazu auch das Zusammenspiel mit Light Manager, Shutter Manager und den Weckern prüfen.
-3. Benutzerabhängige Sidebar und Dashboarddarstellung ergänzen.
+3. Zusätzliche Panelarten und individuelle Dashboarddarstellung bei Bedarf gezielt freigeben.
 4. Einen begrenzten Dashboardeditor und gezielte Bearbeitungsfunktionen für eigene Wecker und Programme ergänzen.
 
 ## Entwicklung und Prüfungen
