@@ -1,5 +1,15 @@
 # Änderungen
 
+## 1.5.0
+
+Administration ist der erste Reiter und bündelt Benutzer, Urlaubsmodus und Rollenverwaltung auf einer gemeinsamen Seite. Anwendungstabs und Dashboards bleiben direkt erreichbar.
+
+Neue Darstellungen werden in einem Dialog sofort benannt. Abbrechen und ungültige Namen erzeugen keinen Eintrag. Umbenennen, Löschbestätigung, Dashboardfreigaben und Ziehen zum Sortieren bleiben erhalten.
+
+Die Versionen von Oberfläche, Integration und HA UI Kit stehen als kompakte gemeinsame Versionszeile ganz unten in den Einstellungen.
+
+Der separate Zugriffsschutz-Schalter entfällt. Dashboard-Konfigurationsanfragen werden für aktiv eingeschränkte Benutzer automatisch geprüft, auch wenn der alte Schalter bisher ausgeschaltet war. Freigaben und Rollenzuordnungen bleiben erhalten; ausgeschaltete Konten und native HA-Administratorrechte werden nicht eingeschränkt. Geräte- und Systemrechte bleiben bei Home Assistant.
+
 ## 1.4.0
 
 Manuell sortierbare Einträge werden am gemeinsamen Sortiergriff gedrückt gehalten und an die gewünschte Position gezogen. Die bisherigen Auf-/Ab-Pfeile entfallen. Maus, Touch und Tastatur am Griff werden unterstützt; Escape bricht den Vorgang ab. HA UI Kit 1.7.0 liefert Griff, Rückmeldung und Interaktion gemeinsam. Bestehende Rechte und gespeicherte Daten bleiben erhalten.

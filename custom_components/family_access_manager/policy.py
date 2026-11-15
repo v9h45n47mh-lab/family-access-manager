@@ -170,7 +170,7 @@ def default_app_roles():
 
 
 def default_policy():
-    return {**_legacy_default_policy(), 'app_roles': default_app_roles(), 'app_bindings': {}, 'admin_presentations': {}}
+    return {**_legacy_default_policy(), 'native_dashboard_gate': True, 'app_roles': default_app_roles(), 'app_bindings': {}, 'admin_presentations': {}}
 
 
 def validate_policy(raw):
@@ -208,6 +208,8 @@ def validate_policy(raw):
         raise InvalidPolicy('Ungültige Darstellungszuordnung für Administratoren.')
     if len(json.dumps(raw).encode()) > 250_000:
         raise InvalidPolicy('Die Rechtekonfiguration ist zu groß.')
+    # Dashboard checks are intrinsic for enabled users; legacy false flags cannot bypass them.
+    checked['native_dashboard_gate'] = True
     return {**checked, 'app_roles': deepcopy(roles), 'app_bindings': deepcopy(bindings), 'admin_presentations': deepcopy(admin_presentations)}
 
 

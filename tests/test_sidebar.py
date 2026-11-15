@@ -107,8 +107,8 @@ async def get_panels(ws, mid=1):
 
 
 async def test_native_get_panels_filters_only_managed_user(runtime, hass, child, grant, panels, hass_ws_client):
-    # Filtering applies even while the separate direct-config gate is off.
-    assert not runtime.policy.config["native_dashboard_gate"]
+    # Filtering and direct-config protection apply automatically to enabled users.
+    assert runtime.policy.config["native_dashboard_gate"]
     selected = await hass_ws_client(hass, access_token=child[1])
     result = await get_panels(selected)
     assert set(result) == {"dashboard-kids", "profile", "notfound"}
