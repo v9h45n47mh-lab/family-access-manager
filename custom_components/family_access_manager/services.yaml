@@ -1,0 +1,9 @@
+set_vacation:
+  name: Zentralen Urlaubsmodus setzen
+  description: Steuert den gemeinsamen Urlaubsmodus für Light Manager, Shutter Manager und Hausarbeiten. Nur HA-Administratoren oder vertrauenswürdige Automationen.
+  fields:
+    enabled:
+      name: Aktiv
+      required: true
+      selector:
+        boolean: {}
