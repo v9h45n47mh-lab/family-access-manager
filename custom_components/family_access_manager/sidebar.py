@@ -16,8 +16,14 @@ SYSTEM_ROUTES = frozenset({"profile", "notfound", "_my_redirect", "app"})
 
 def visible_panels(policy, user, panels):
     """Keep allowed dashboards and account routes for managed users."""
-    if not policy.managed(user):
+    if not policy.presentation_managed(user):
         return panels
+    if policy.privileged(user):
+        # Admin presentation changes navigation, never native authorization.
+        return {key: panel for key, panel in panels.items()
+                if (panel.get('url_path') or key) == PANEL_PATH
+                or panel.get('component_name') != 'lovelace'
+                or policy.presentation_dashboard(user, panel.get('url_path') or key)}
     result = {}
     for key, panel in panels.items():
         path = panel.get("url_path") or key
@@ -83,7 +89,7 @@ class SidebarFilter:
 
         @wraps(handler)
         def filtered(hass, connection, msg):
-            if not self.runtime.policy.managed(principal(connection.user)):
+            if not self.runtime.policy.presentation_managed(principal(connection.user)):
                 return handler(hass, connection, msg)
             return handler(hass, self.connection_type(connection, self.runtime, msg["id"]), msg)
 
@@ -99,14 +105,14 @@ class SidebarFilter:
 
 def visible_dashboards(policy, user, dashboards):
     """HA's profile picker fetches this catalog independently of get_panels."""
-    if not policy.managed(user):
+    if not policy.presentation_managed(user):
         return dashboards
     return [dashboard for dashboard in dashboards
             if isinstance(dashboard, dict)
             and isinstance(dashboard.get("url_path"), str)
             and dashboard["url_path"] != PANEL_PATH
-            and not dashboard.get("require_admin", False)
-            and policy.dashboard(user, dashboard["url_path"])]
+            and (policy.privileged(user) or not dashboard.get("require_admin", False))
+            and policy.presentation_dashboard(user, dashboard["url_path"])]
 
 
 class _DashboardConnection(_PanelConnection):

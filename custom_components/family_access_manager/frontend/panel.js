@@ -1,4 +1,4 @@
-import {UI_CSS, UI_VERSION, escapeHtml as esc, panelHeader, navigation, section, row, button, iconButton, field, selectField, toggle, feedback, emptyState, loadingState, versionInfo, statusBadge, helpContent, confirmDialog, dialog, multiSelect, textareaField, userAccessRow, bindUI} from './family-ui/1.6.0/family-ui.js';
+import {UI_CSS, UI_VERSION, escapeHtml as esc, panelHeader, navigation, section, row, button, iconButton, field, selectField, toggle, feedback, emptyState, loadingState, versionInfo, statusBadge, helpContent, confirmDialog, dialog, multiSelect, textareaField, userAccessRow, orderHandle, bindUI} from './family-ui/1.7.0/family-ui.js';
 const options = values => values.map(([value,label]) => ({value,label}));
 const kitSelect = (props,data={},inline=false) => {
   const attrs=Object.entries(data).map(([key,value])=>` data-${key}="${esc(value)}"`).join('');
@@ -60,7 +60,7 @@ class FamilyAccessPanel extends HTMLElement {
         event.element.setAttribute('aria-checked',String(event.checked));
         this.markDirty(); return;
       }
-      this.click({target:event.element});
+      return this.click({target:event.element});
     });
   }
   disconnectedCallback() { this.unbind?.(); this.unbind=null;this.vacationUnsub?.();this.vacationUnsub=null;this.vacationEpoch=(this.vacationEpoch||0)+1; }
@@ -140,15 +140,21 @@ class FamilyAccessPanel extends HTMLElement {
       }
       if(action==='edit-user-roles'){
         this.editingUser=control.dataset.user;
-        const user=this.snapshot.users.find(u=>u.id===this.editingUser),assigned=this.policy.bindings[this.editingUser]||[];
-        const displays=[{value:'!none',label:'Keine Darstellung'},...Object.entries(this.policy.roles).map(([value,r])=>({value,label:r.name}))];
+        const user=this.snapshot.users.find(u=>u.id===this.editingUser),assigned=user.admin?(this.policy.admin_presentations[user.id]?[this.policy.admin_presentations[user.id]]:[]):this.policy.bindings[user.id]||[];
+        const displays=[{value:'!none',label:user.admin?'HA-Standarddarstellung':'Keine Darstellung'},...Object.entries(this.policy.roles).map(([value,r])=>({value,label:r.name}))];
         if(assigned.length>1)displays.push({value:'!existing',label:assigned.map(id=>this.policy.roles[id].name).join(' + ')+' (bestehende Kombination)'});
-        this.showModal('user-roles-dialog','Zuordnung für '+user.name,feedback('Die Darstellung bestimmt sichtbare Dashboards. App-Rollen bestimmen die Rechte in allen Anwendungen. Der Dashboard-Schalter wird dadurch nicht aktiviert.')+kitSelect({id:'user-presentation',label:'Darstellung',value:assigned.length>1?'!existing':assigned[0]||'!none',options:displays})+multiSelect({id:'user-roles',label:'App-Rollen',searchLabel:'App-Rollen suchen',items:Object.entries(this.policy.app_roles).map(([id,r])=>({value:id,label:r.name})),values:this.policy.app_bindings[this.editingUser]||[]}),button({label:'Übernehmen',action:'confirm-user-roles',variant:'primary'}));return;
+        const picker=kitSelect({id:'user-presentation',label:'Darstellung',value:assigned.length>1?'!existing':assigned[0]||'!none',options:displays});
+        const content=user.admin?feedback('Die Darstellung bestimmt sichtbare Dashboards. Family Administration, Einstellungen und andere HA-Systembereiche bleiben sichtbar; die vollen HA-Administratorrechte bleiben erhalten. HA-Standarddarstellung hebt diese zusätzliche Auswahl auf.')+picker:feedback('Die Darstellung bestimmt sichtbare Dashboards. App-Rollen bestimmen die Rechte in allen Anwendungen. Der Dashboard-Schalter wird dadurch nicht aktiviert.')+picker+multiSelect({id:'user-roles',label:'App-Rollen',searchLabel:'App-Rollen suchen',items:Object.entries(this.policy.app_roles).map(([id,r])=>({value:id,label:r.name})),values:this.policy.app_bindings[this.editingUser]||[]});
+        this.showModal('user-roles-dialog',user.admin?'Darstellung für '+user.name:'Zuordnung für '+user.name,content,button({label:'Übernehmen',action:'confirm-user-roles',variant:'primary'}));return;
       }
       if(action==='confirm-user-roles'){
-        const display=this.shadowRoot.getElementById('user-presentation').value;
-        if(display!=='!existing')this.policy.bindings[this.editingUser]=display==='!none'?[]:[display];
-        this.policy.app_bindings[this.editingUser]=this.checkedValues('user-roles');this.closeModal();this.markDirty();this.render();return;
+        const display=this.shadowRoot.getElementById('user-presentation').value,user=this.snapshot.users.find(u=>u.id===this.editingUser);
+        if(user.admin){if(display==='!none')delete this.policy.admin_presentations[user.id];else this.policy.admin_presentations[user.id]=display;}
+        else{
+          if(display!=='!existing')this.policy.bindings[this.editingUser]=display==='!none'?[]:[display];
+          this.policy.app_bindings[this.editingUser]=this.checkedValues('user-roles');
+        }
+        this.closeModal();this.markDirty();this.render();return;
       }
       if(['rename-role','rename-presentation'].includes(action)) {
         this.renamingApp=action==='rename-role';const role=this.renamingApp?this.policy.app_roles[this.appRoleId]:this.policy.roles[this.roleId];
@@ -161,14 +167,14 @@ class FamilyAccessPanel extends HTMLElement {
         this.closeModal();this.markDirty();this.render();return;
       }
       if(action === "move-dashboard") {
-        const list=this.selectedDashboards().map(d=>d.id),index=list.indexOf(control.dataset.path),next=index+Number(control.dataset.direction);
+        const list=this.selectedDashboards().map(d=>d.id),index=list.indexOf(control.dataset.path),next=index+Number(control.dataset.offset??control.dataset.direction);
         if(this.query||index<0||next<0||next>=list.length)return;
-        [list[index],list[next]]=[list[next],list[index]];this.policy.roles[this.roleId].dashboard_order=list;this.markDirty();this.renderDashboardRows();
+        list.splice(next,0,...list.splice(index,1));this.policy.roles[this.roleId].dashboard_order=list;this.markDirty();this.renderDashboardRows();
         [...this.shadowRoot.querySelectorAll('[data-action="move-dashboard"]')].find(el=>el.dataset.path===control.dataset.path&&el.dataset.direction===control.dataset.direction&&!el.disabled)?.focus();return;
       }
       if(action === "apply-order") {
         const users=this.snapshot.users;
-        this.showModal('order-dialog','Reihenfolge übernehmen',feedback(this.dirty?'Dabei werden alle vorbereiteten Rollen- und Rechteänderungen gespeichert.':'Übernimmt nur die Reihenfolge. Rollen, Freigaben, Aktivierung, ausgeblendete Einträge und Startseiten bleiben erhalten.')+multiSelect({id:'order-users',label:'Benutzer',searchLabel:'Benutzer suchen',items:users.map(u=>({value:u.id,label:u.name,description:u.admin?'Administrator':''})),values:users.filter(u=>this.policy.bindings[u.id]?.includes(this.roleId)).map(u=>u.id)}),button({label:this.dirty?'Speichern und übernehmen':'Übernehmen',action:'confirm-order',variant:'primary'}));return;
+        this.showModal('order-dialog','Reihenfolge übernehmen',feedback(this.dirty?'Dabei werden alle vorbereiteten Rollen- und Rechteänderungen gespeichert.':'Übernimmt nur die Reihenfolge. Rollen, Freigaben, Aktivierung, ausgeblendete Einträge und Startseiten bleiben erhalten.')+multiSelect({id:'order-users',label:'Benutzer',searchLabel:'Benutzer suchen',items:users.map(u=>({value:u.id,label:u.name,description:u.admin?'Administrator':''})),values:users.filter(u=>this.policy.bindings[u.id]?.includes(this.roleId)||this.policy.admin_presentations[u.id]===this.roleId).map(u=>u.id)}),button({label:this.dirty?'Speichern und übernehmen':'Übernehmen',action:'confirm-order',variant:'primary'}));return;
       }
       if(action === "confirm-order") {
         const ids=this.checkedValues('order-users');if(!ids.length)throw Error('Bitte mindestens einen Benutzer auswählen.');
@@ -197,7 +203,7 @@ class FamilyAccessPanel extends HTMLElement {
       if(action === "close-modal"){this.closeModal();return;}
       if(['delete-role','delete-presentation'].includes(action)) {
         const app=action==='delete-role',roles=app?this.policy.app_roles:this.policy.roles,bindings=app?this.policy.app_bindings:this.policy.bindings,id=app?this.appRoleId:this.roleId,label=app?'Rolle':'Darstellung';
-        if(Object.values(bindings).some(r=>r.includes(id)))throw Error('Diese '+label+' ist noch einem Benutzer zugewiesen.');
+        if(Object.values(bindings).some(r=>r.includes(id))||(!app&&Object.values(this.policy.admin_presentations).includes(id)))throw Error('Diese '+label+' ist noch einem Benutzer zugewiesen.');
         this.deletingRole={id,app};
         this.shadowRoot.getElementById('modal-host').innerHTML=confirmDialog({id:'delete-role-dialog',title:label+' löschen?',message:'Die '+label+' „'+roles[id].name+'“ löschen? Die Änderung wird erst beim Speichern übernommen.',confirmLabel:label+' löschen',confirmAction:'confirm-delete-role',cancelAction:'close-modal',danger:true});
         this.shadowRoot.getElementById('delete-role-dialog').showModal();return;
@@ -205,7 +211,7 @@ class FamilyAccessPanel extends HTMLElement {
       if(action==='confirm-delete-role') {
         const {id,app}=this.deletingRole||{},roles=app?this.policy.app_roles:this.policy.roles,bindings=app?this.policy.app_bindings:this.policy.bindings;
         if(!id||!roles[id])throw Error('Dieser Eintrag ist nicht mehr vorhanden.');
-        if(Object.values(bindings).some(r=>r.includes(id)))throw Error('Dieser Eintrag ist noch einem Benutzer zugewiesen.');
+        if(Object.values(bindings).some(r=>r.includes(id))||(!app&&Object.values(this.policy.admin_presentations).includes(id)))throw Error('Dieser Eintrag ist noch einem Benutzer zugewiesen.');
         delete roles[id];this.closeModal();
         if(app)this.appRoleId=Object.keys(roles)[0]||'';else this.roleId=Object.keys(roles)[0]||'';
         this.dirty=true;this.render();return;
@@ -258,7 +264,7 @@ class FamilyAccessPanel extends HTMLElement {
   }
   userContent() {
     const users=this.snapshot.users.map(u=>{
-      if(u.admin)return row({title:u.name,description:'HA-Administrator',trailing:statusBadge({label:'Vollzugriff',state:'neutral',icon:'lock'})+iconButton({icon:'edit',label:'Dashboards für '+u.name,action:'admin-sidebar',data:{user:u.id}})});
+      if(u.admin)return row({title:u.name,description:'HA-Administrator · Darstellung: '+(this.policy.roles[this.policy.admin_presentations[u.id]]?.name||'HA-Standard'),trailing:statusBadge({label:'Vollzugriff',state:'neutral',icon:'lock'})+iconButton({icon:'edit',label:'Darstellung für '+u.name,action:'edit-user-roles',data:{user:u.id}})+iconButton({icon:'settings',label:'Dashboards für '+u.name,action:'admin-sidebar',data:{user:u.id}})});
       return row({title:u.name,description:this.userAssignments(u)+' · '+this.userDescription(u),trailing:iconButton({icon:'edit',label:'Zuordnung für '+u.name,action:'edit-user-roles',data:{user:u.id}})+toggle({label:'Dashboardzugriff für '+u.name,action:'user-activation',checked:this.policy.enabled_users.includes(u.id),iconOnly:true,data:{user:u.id}})});
     }).join('');
     return section({id:'users',title:'Benutzer',content:feedback('Darstellung und App-Rolle werden unabhängig zugewiesen. Beispiel: Maximilian und Paul verwenden jeweils ihre eigene Darstellung und gemeinsam die App-Rolle „Benutzer“. Der Schalter aktiviert die Dashboardbeschränkung.')+users});
@@ -285,7 +291,7 @@ class FamilyAccessPanel extends HTMLElement {
     const role=this.policy.roles[this.roleId],add=button({label:'Darstellung',icon:'add',action:'add-presentation',variant:'primary'});
     if(!role)return section({id:'dashboards',title:'Darstellungen',trailing:add,content:emptyState('Lege eine Darstellung an, um Dashboards freizugeben.')});
     const picker=kitSelect({id:'role-select',label:'Darstellung',value:this.roleId,options:options(Object.entries(this.policy.roles).map(([id,r])=>[id,r.name]))})+`<div class="toolbar">${iconButton({icon:'edit',label:'Darstellung umbenennen',action:'rename-presentation'})}${iconButton({icon:'trash',label:'Darstellung entfernen',action:'delete-presentation',danger:true})}</div>`;
-    return section({id:'dashboards',title:'Darstellungen',trailing:add,content:picker+feedback('Die Darstellung legt sichtbare Dashboards und ihre Reihenfolge fest. App-Rechte werden unabhängig über App-Rollen verwaltet. Gewählte Dashboards mit den Pfeilen sortieren; weitere stehen zugeklappt unter „Nicht gewählt“.')+`<div class="toolbar">${button({label:'Reihenfolge übernehmen',action:'apply-order',icon:'copy',disabled:!this.selectedDashboards().length})}</div>`+field({id:'search',label:'Dashboards suchen',type:'search',placeholder:'Name oder Pfad',value:this.query})+`<div id="dashboard-rows">${this.dashboardRows()}</div>`});
+    return section({id:'dashboards',title:'Darstellungen',trailing:add,content:picker+feedback('Die Darstellung legt sichtbare Dashboards und ihre Reihenfolge fest. App-Rechte werden unabhängig über App-Rollen verwaltet. Gewählte Dashboards am Sortiergriff gedrückt halten und ziehen; weitere stehen zugeklappt unter „Nicht gewählt“.')+`<div class="toolbar">${button({label:'Reihenfolge übernehmen',action:'apply-order',icon:'copy',disabled:!this.selectedDashboards().length})}</div>`+field({id:'search',label:'Dashboards suchen',type:'search',placeholder:'Name oder Pfad',value:this.query})+`<div id="dashboard-rows">${this.dashboardRows()}</div>`});
   }
   dashboardRows() {
     const role=this.policy.roles[this.roleId];if(!role)return '';
@@ -294,7 +300,7 @@ class FamilyAccessPanel extends HTMLElement {
     const chosen=all.filter(matches),unchosen=this.snapshot.dashboards.filter(d=>!ids.has(d.id)&&matches(d)).sort((a,b)=>a.name.localeCompare(b.name,'de'));
     const renderRow=(x,selected)=>{
       const i=all.findIndex(d=>d.id===x.id);
-      const arrows=selected?iconButton({icon:'up',label:x.name+' nach oben',action:'move-dashboard',disabled:Boolean(q)||i===0,data:{path:x.id,direction:-1}})+iconButton({icon:'down',label:x.name+' nach unten',action:'move-dashboard',disabled:Boolean(q)||i===all.length-1,data:{path:x.id,direction:1}}):'';
+      const arrows=selected?orderHandle({id:x.id,index:i,count:all.length,action:'move-dashboard',group:'dashboards',disabled:Boolean(q),data:{path:x.id},label:'Dashboard verschieben: '+x.name}):'';
       return row({title:x.name,description:x.id,trailing:arrows+toggle({label:'Dashboard '+x.name+' freigeben',action:'dashboard-grant',checked:selected,iconOnly:true,data:{path:x.id}})});
     };
     return (q?feedback('Zum Sortieren die Suche leeren.'):'')+chosen.map(x=>renderRow(x,true)).join('')
@@ -331,7 +337,7 @@ class FamilyAccessPanel extends HTMLElement {
   scopeContent() {
     const facts=[['Dashboardfreigaben','Rollen und Benutzeraktivierung'],['Seitenleiste',this.status.sidebar_filter?'Nach Rollen gefiltert':this.status.sidebar_available?'Für aktivierte Benutzer gefiltert':'Nicht verfügbar'],['Native Dashboard-Konfigurationen',this.status.native_dashboard_gate&&this.status.gate_available?'Sperre eingeschaltet':'Sperre ausgeschaltet'],['Geräte- und Systemrechte','Durch Home Assistant verwaltet'],['Nabu Casa auf deiner Instanz','Vor Ort zu prüfen']];
     return section({id:'activation',title:'Zugriffsschutz',content:row({title:'Dashboard-Konfigurationen sperren',description:'Blockiert nicht freigegebene Dashboard-Konfigurationen für aktivierte Benutzer.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',iconOnly:true,checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})})
-      +section({id:'versions',title:'Versionen',content:versionInfo({frontend:'1.3.1',backend:this.status.version,ui:UI_VERSION})})
+      +section({id:'versions',title:'Versionen',content:versionInfo({frontend:'1.4.0',backend:this.status.version,ui:UI_VERSION})})
       +section({id:'diagnosis',title:'Diagnose',expanded:Boolean(this.output),content:this.testContent()})
       +section({id:'scope',title:'Hinweise',expanded:false,content:facts.map(([title,description])=>row({title,description})).join('')
       +helpContent({content:'<p>Family Administration verwaltet Anwendungsrechte je Rolle sowie Dashboardzugriff und Navigation. Freigegebene Dashboards benötigen keine zusätzlichen Gerätefreigaben. Vorhandene HA-Benutzerrechte, Gruppen, Tokens und Netzwerkeinstellungen bleiben bestehen.</p><p>Die zusätzliche Dashboard-Sperre schützt neue Konfigurationsanfragen. Bereits geladene Inhalte lassen sich nicht zurückholen. Profil und feste Konto-/Benachrichtigungselemente bleiben erreichbar. Beim Entfernen der Integration entfällt die Filterung.</p>'})})

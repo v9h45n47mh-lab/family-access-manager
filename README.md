@@ -1,10 +1,16 @@
-# Family Administration 1.3.1
+# Family Administration 1.4.0
 
-## Neu in 1.3.1
+## Neu in 1.4.0
+
+Manuell sortierbare Einträge werden am gemeinsamen Sortiergriff gedrückt gehalten und an die gewünschte Position gezogen. Die bisherigen Auf-/Ab-Pfeile entfallen. Maus, Touch und Tastatur am Griff werden unterstützt; Escape bricht den Vorgang ab. HA UI Kit 1.7.0 liefert Griff, Rückmeldung und Interaktion gemeinsam. Bestehende Rechte und gespeicherte Daten bleiben erhalten.
+
+HA-Administratoren erhalten unter Benutzer ebenfalls eine eigene Darstellung. Diese bestimmt sichtbare Dashboards; Family Administration und HA-Systembereiche bleiben erreichbar. Native Administratorrechte bleiben vollständig erhalten. Die bisherige Standarddarstellung bleibt beim Update bestehen, bis ausdrücklich eine Darstellung zugewiesen wird. Die Reihenfolge lässt sich anschließend auf die zugeordneten Admins übernehmen.
+
+## Neu in 1.4.0
 
 Die Tabs stehen jetzt in der Reihenfolge Benutzer, Dashboards, Urlaubsmodus, Rollenverwaltung, gefolgt von den Anwendungstabs und Fehler. Rollenrechte, Darstellungen und der zentrale Urlaubsstatus bleiben unverändert.
 
-Zentrale Verwaltung für Dashboard-Darstellungen, App-Rollen und Urlaubsmodus in Home Assistant. Die Oberfläche verwendet ausschließlich die mitgelieferten Originalkomponenten und Styles aus **HA UI Kit 1.6.0**.
+Zentrale Verwaltung für Dashboard-Darstellungen, App-Rollen und Urlaubsmodus in Home Assistant. Die Oberfläche verwendet ausschließlich die mitgelieferten Originalkomponenten und Styles aus **HA UI Kit 1.7.0**.
 
 ## Darstellung und App-Rolle getrennt zuweisen
 
@@ -15,7 +21,7 @@ Zentrale Verwaltung für Dashboard-Darstellungen, App-Rollen und Urlaubsmodus in
 
 Eine **Darstellung** legt die sichtbaren Dashboards und deren Reihenfolge fest. Eine **App-Rolle** legt die Rechte in allen beteiligten Anwendungen fest. Die Rechte der Rolle „Benutzer“ werden je App einmal gepflegt und gelten für alle zugeordneten Benutzer. Das Ändern einer Darstellung verändert keine App-Rechte.
 
-1. Unter **Dashboards** eine Darstellung anlegen, benennen und Dashboards freigeben. Nur gewählte Dashboards lassen sich mit den Pfeilen sortieren. **Nicht gewählt** ist zunächst zugeklappt; die Suche zeigt auch Treffer in diesem Bereich.
+1. Unter **Dashboards** eine Darstellung anlegen, benennen und Dashboards freigeben. Nur gewählte Dashboards lassen sich am Sortiergriff gedrückt halten und ziehen. **Nicht gewählt** ist zunächst zugeklappt; die Suche zeigt auch Treffer in diesem Bereich.
 2. In der **Rollenverwaltung** die gemeinsamen App-Rollen **Admin** und **Benutzer** oder eigene Rollen verwalten. In jedem Anwendungstab die Rechte der ausgewählten App-Rolle festlegen.
 3. Unter **Benutzer → Zuordnung** die Darstellung und die App-Rolle wählen. Der separate Dashboard-Schalter aktiviert die Beschränkung von Seitenleiste und Dashboardauswahl. Ohne diesen Schalter bleibt die native HA-Navigation erhalten; App-Rechte gelten unabhängig davon.
 4. **Änderungen speichern**. Mehrere App-Rollen ergänzen sich. Bereits bestehende Kombinationen mehrerer Darstellungen bleiben erhalten, bis bewusst eine andere Darstellung gewählt wird.
@@ -59,11 +65,11 @@ Unter **Einstellungen → Versionen** stehen Oberfläche, Integration und HA UI 
 
 ## Installation und Update
 
-Das bestehende Repository `https://github.com/v9h45n47mh-lab/family-access-manager` in HACS als **Integration** verwenden. Version **1.3.1** installieren, HA neu starten und Browser/App vollständig neu laden. Bestehende Installationen erhalten den neuen Anzeigenamen automatisch. Der technische Integrationspfad und die verbundenen App-Protokolle bleiben kompatibel.
+Das bestehende Repository `https://github.com/v9h45n47mh-lab/family-access-manager` in HACS als **Integration** verwenden. Version **1.4.0** installieren, HA neu starten und Browser/App vollständig neu laden. Bestehende Installationen erhalten den neuen Anzeigenamen automatisch. Der technische Integrationspfad und die verbundenen App-Protokolle bleiben kompatibel.
 
 Bei Erstinstallation unter **Einstellungen → Geräte & Dienste → Integration hinzufügen → Family Administration** einrichten. Die Quelle ist ein benutzerdefiniertes Repository und nicht automatisch Teil des offiziellen Katalogs.
 
-Für die manuelle Installation aus [GitHub Releases](https://github.com/v9h45n47mh-lab/family-access-manager/releases) `family_access_manager.zip` laden und `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren. Das vollständige Quellpaket heißt `Family_Administration_1.3.1.zip`. HACS bei alten Commit-Hash-Anzeigen neu laden und ausdrücklich die reguläre Version wählen.
+Für die manuelle Installation aus [GitHub Releases](https://github.com/v9h45n47mh-lab/family-access-manager/releases) `family_access_manager.zip` laden und `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren. Das vollständige Quellpaket heißt `Family_Administration_1.4.0.zip`. HACS bei alten Commit-Hash-Anzeigen neu laden und ausdrücklich die reguläre Version wählen.
 
 ## Schutzumfang
 

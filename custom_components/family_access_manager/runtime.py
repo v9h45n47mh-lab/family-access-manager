@@ -177,7 +177,7 @@ class Runtime:
                 "gate_available": self.gate.available,
                 "sidebar_available": self.sidebar.available,
                 "dashboard_list_available": self.dashboard_list.available,
-                "sidebar_filter": self.sidebar.available and self.policy.managed(actor),
+                "sidebar_filter": self.sidebar.available and self.policy.presentation_managed(actor),
                 "device_control": self.policy.config["device_control"],
                 "probe_entity_id": self.probe_entity_id,
                 "scope": "prototype_api_and_optional_dashboard_config_gate",
@@ -214,11 +214,17 @@ class Runtime:
                 candidate['bindings'].pop(uid, None)
                 candidate['app_bindings'].pop(uid, None)
             candidate['enabled_users'] = [uid for uid in candidate['enabled_users'] if uid not in stale]
+            for uid, rid in list(candidate['admin_presentations'].items()):
+                target = users.get(uid)
+                if target is None or target.system_generated or not (target.is_admin or target.is_owner):
+                    if self.policy.config['admin_presentations'].get(uid) != rid:
+                        raise InvalidPolicy('Admin-Darstellungen können nur vorhandenen persönlichen HA-Administratoren und Eigentümern zugewiesen werden.')
+                    del candidate['admin_presentations'][uid]
             if candidate["native_dashboard_gate"] and not self.gate.available:
                 raise InvalidPolicy("Die Dashboard-Prüfung ist mit dieser HA-Version nicht verfügbar.")
-            if candidate["enabled_users"] and not self.sidebar.available:
+            if (candidate["enabled_users"] or candidate["admin_presentations"]) and not self.sidebar.available:
                 raise InvalidPolicy("Die Seitenleistenfilterung ist mit dieser HA-Version nicht verfügbar.")
-            if candidate["enabled_users"] and not self.dashboard_list.available:
+            if (candidate["enabled_users"] or candidate["admin_presentations"]) and not self.dashboard_list.available:
                 raise InvalidPolicy("Die Dashboardauswahl im Profil kann mit dieser HA-Version nicht gefiltert werden.")
             async with self.lock:
                 if candidate["revision"] != self.policy.config["revision"]:
