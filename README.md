@@ -1,4 +1,4 @@
-# Family Access Manager 1.1.0
+# Family Access Manager 1.1.2
 
 Benutzerrollen und Dashboardfreigaben für Home Assistant. Die Oberfläche verwendet vollständig das lokal eingebundene **HA UI Kit 1.6.0**.
 
@@ -6,11 +6,12 @@ Family Access ist eine reine Verwaltungsoberfläche für Administratoren und Eig
 
 ## Dashboardzugriff einrichten
 
-1. Unter **Rollen** eine Rolle anlegen und die gewünschten Dashboards über die Schalter freigeben.
-2. Unter **Benutzer** das Konto aktivieren, die Rolle wählen und **Änderungen speichern**.
-3. Die Seitenleiste zeigt diesem Konto nur freigegebene Dashboards sowie die eigenen Konto-/internen Routen. Allgemeine Panels wie Verlauf, Kalender und Medien werden ausgeblendet; das feste Konto- und Benachrichtigungsmenü bleibt bestehen.
-4. Für direkte Dashboard-Konfigurationsanfragen unter **Einstellungen → Dashboard-Konfigurationen sperren** die Sperre einschalten und speichern.
-5. Mit einem separaten Benutzerkonto prüfen. Nach einem Update Home Assistant neu starten und den Browser vollständig neu laden.
+1. Unter **Rollenverwaltung** eine Rolle anlegen.
+2. Unter **Dashboards** die Rolle wählen und die gewünschten Dashboards über die Schalter freigeben. Hier auch sortieren und die Reihenfolge auf Benutzer übernehmen.
+3. Unter **Benutzer** das Konto aktivieren, die Rolle wählen und **Änderungen speichern**.
+4. Die Seitenleiste zeigt diesem Konto nur freigegebene Dashboards sowie die eigenen Konto-/internen Routen. Allgemeine Panels wie Verlauf, Kalender und Medien werden ausgeblendet; das feste Konto- und Benachrichtigungsmenü bleibt bestehen.
+5. Für direkte Dashboard-Konfigurationsanfragen unter **Einstellungen → Dashboard-Konfigurationen sperren** die Sperre einschalten und speichern.
+6. Mit einem separaten Benutzerkonto prüfen. Nach einem Update Home Assistant neu starten und den Browser vollständig neu laden.
 
 Eine Rolle lässt sich vorbereiten, ohne das Konto zu aktivieren. Beim Ausschalten bleibt die Rolle gespeichert und die normale HA-Navigation wird wiederhergestellt. Administratoren und Eigentümer behalten Vollzugriff.
 
@@ -18,7 +19,7 @@ Gerätefreigaben sind für diesen Ablauf nicht erforderlich und werden nicht meh
 
 ## Rollen löschen und Versionen
 
-Das Stiftsymbol benennt eine Rolle um. Das Papierkorbsymbol öffnet zuerst **Rolle löschen?**. **Abbrechen**, Schließen oder Escape erhalten die Rolle. Erst **Rolle löschen** entfernt sie aus dem Entwurf; **Änderungen speichern** übernimmt den Entwurf dauerhaft. Zugewiesene Rollen können weiterhin nicht gelöscht werden.
+Unter **Rollenverwaltung** stehen Anlegen, Umbenennen und Löschen separat zur Verfügung. Das Stiftsymbol benennt eine Rolle um. Das Papierkorbsymbol öffnet zuerst **Rolle löschen?**. **Abbrechen**, Schließen oder Escape erhalten die Rolle. Erst **Rolle löschen** entfernt sie aus dem Entwurf; **Änderungen speichern** übernimmt den Entwurf dauerhaft. Zugewiesene Rollen können weiterhin nicht gelöscht werden.
 
 Unter **Einstellungen → Versionen** stehen Oberfläche, Integration und HA UI Kit in einem eigenen sichtbaren Bereich. Die veröffentlichte Version ist ein reguläres Release ohne Beta-/Prüfversionskennzeichnung.
 

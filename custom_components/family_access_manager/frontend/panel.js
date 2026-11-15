@@ -233,10 +233,15 @@ class FamilyAccessPanel extends HTMLElement {
   selectedDashboards(){return this.orderedDashboards().filter(d=>['view','control','edit'].includes(this.policy.roles[this.roleId].dashboards[d.id]));}
   roleContent() {
     const role=this.policy.roles[this.roleId],add=button({label:'Rolle',icon:'add',action:'add-role',variant:'primary'});
-    if(!role)return section({id:'roles',title:'Rollen',trailing:add,content:emptyState('Lege eine Rolle an, um Freigaben zu verwalten.')});
+    if(!role)return section({id:'roles',title:'Rollenverwaltung',trailing:add,content:emptyState('Lege eine Rolle an, um Freigaben zu verwalten.')});
     const fields=kitSelect({id:'role-select',label:'Rolle',value:this.roleId,options:options(Object.entries(this.policy.roles).map(([id,r])=>[id,r.name]))})+`<div class="toolbar">${iconButton({icon:'edit',label:'Rolle umbenennen',action:'rename-role'})}${iconButton({icon:'trash',label:'Rolle entfernen',action:'delete-role',danger:true})}</div>`;
-    return section({id:'roles',title:'Rollen',trailing:add,content:fields})
-      +section({id:'dashboards',title:'Dashboards',content:feedback('Gewählte Dashboards mit den Pfeilen sortieren. Weitere Dashboards stehen unter „Nicht gewählt“. Die Reihenfolge lässt sich auf ausgewählte Benutzer übernehmen.')+`<div class="toolbar">${button({label:'Reihenfolge übernehmen',action:'apply-order',icon:'copy',disabled:!this.selectedDashboards().length})}</div>`+field({id:'search',label:'Dashboards suchen',type:'search',placeholder:'Name oder Pfad',value:this.query})+`<div id="dashboard-rows">${this.dashboardRows()}</div>`});
+    return section({id:'roles',title:'Rollenverwaltung',trailing:add,content:fields+feedback('Hier Rollen anlegen, umbenennen und nach Bestätigung löschen. Die Freigaben stehen unter „Dashboards“ und in den Anwendungstabs. Benutzer erhalten ihre Rollen unter „Benutzer“.')});
+  }
+  dashboardContent() {
+    const role=this.policy.roles[this.roleId];
+    if(!role)return section({id:'dashboards',title:'Dashboards',content:emptyState('Lege zuerst unter „Rollenverwaltung“ eine Rolle an.')});
+    const picker=kitSelect({id:'role-select',label:'Rolle',value:this.roleId,options:options(Object.entries(this.policy.roles).map(([id,r])=>[id,r.name]))});
+    return section({id:'dashboards',title:'Dashboards',content:picker+feedback('Gewählte Dashboards mit den Pfeilen sortieren. Weitere Dashboards stehen unter „Nicht gewählt“. Die Reihenfolge lässt sich auf ausgewählte Benutzer übernehmen.')+`<div class="toolbar">${button({label:'Reihenfolge übernehmen',action:'apply-order',icon:'copy',disabled:!this.selectedDashboards().length})}</div>`+field({id:'search',label:'Dashboards suchen',type:'search',placeholder:'Name oder Pfad',value:this.query})+`<div id="dashboard-rows">${this.dashboardRows()}</div>`});
   }
   dashboardRows() {
     const role=this.policy.roles[this.roleId];if(!role)return '';
@@ -279,7 +284,7 @@ class FamilyAccessPanel extends HTMLElement {
   scopeContent() {
     const facts=[['Dashboardfreigaben','Rollen und Benutzeraktivierung'],['Seitenleiste',this.status.sidebar_filter?'Nach Rollen gefiltert':this.status.sidebar_available?'Für aktivierte Benutzer gefiltert':'Nicht verfügbar'],['Native Dashboard-Konfigurationen',this.status.native_dashboard_gate&&this.status.gate_available?'Sperre eingeschaltet':'Sperre ausgeschaltet'],['Geräte- und Systemrechte','Durch Home Assistant verwaltet'],['Nabu Casa auf deiner Instanz','Vor Ort zu prüfen']];
     return section({id:'activation',title:'Zugriffsschutz',content:row({title:'Dashboard-Konfigurationen sperren',description:'Blockiert nicht freigegebene Dashboard-Konfigurationen für aktivierte Benutzer.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',iconOnly:true,checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})})
-      +section({id:'versions',title:'Versionen',content:versionInfo({frontend:'1.1.1',backend:this.status.version,ui:UI_VERSION})})
+      +section({id:'versions',title:'Versionen',content:versionInfo({frontend:'1.1.2',backend:this.status.version,ui:UI_VERSION})})
       +section({id:'diagnosis',title:'Diagnose',expanded:Boolean(this.output),content:this.testContent()})
       +section({id:'scope',title:'Hinweise',expanded:false,content:facts.map(([title,description])=>row({title,description})).join('')
       +helpContent({content:'<p>Family Access verwaltet Anwendungsrechte je Rolle sowie Dashboardzugriff und Navigation. Freigegebene Dashboards benötigen keine zusätzlichen Gerätefreigaben. Vorhandene HA-Benutzerrechte, Gruppen, Tokens und Netzwerkeinstellungen bleiben bestehen.</p><p>Die zusätzliche Dashboard-Sperre schützt neue Konfigurationsanfragen. Bereits geladene Inhalte lassen sich nicht zurückholen. Profil und feste Konto-/Benachrichtigungselemente bleiben erreichbar. Beim Entfernen der Integration entfällt die Filterung.</p>'})})
@@ -292,8 +297,8 @@ class FamilyAccessPanel extends HTMLElement {
       this.shadowRoot.innerHTML=`${styles}${feedback('Family Access ist nur für Administratoren verfügbar.',{kind:'error'})}`;return;
     }
     const admin=this.status?.is_admin&&this.snapshot;
-    const items=admin?[{id:'users',label:'Benutzer'},{id:'roles',label:'Rollen'},...(this.snapshot.applications||[]).map(app=>({id:'app-'+app.id,label:app.name})),{id:'errors',label:'Fehler'}]:[{id:'test',label:'Prüfen'}];
-    const content=!this.status?loadingState():this.tab==='users'&&admin?this.userContent():this.tab==='roles'&&admin?this.roleContent():this.tab.startsWith('app-')&&admin?this.applicationContent(this.tab.slice(4)):this.tab==='errors'&&admin?this.errorContent():this.tab==='scope'?this.scopeContent():this.testContent();
+    const items=admin?[{id:'users',label:'Benutzer'},{id:'dashboards',label:'Dashboards'},{id:'roles',label:'Rollenverwaltung'},...(this.snapshot.applications||[]).map(app=>({id:'app-'+app.id,label:app.name})),{id:'errors',label:'Fehler'}]:[{id:'test',label:'Prüfen'}];
+    const content=!this.status?loadingState():this.tab==='users'&&admin?this.userContent():this.tab==='dashboards'&&admin?this.dashboardContent():this.tab==='roles'&&admin?this.roleContent():this.tab.startsWith('app-')&&admin?this.applicationContent(this.tab.slice(4)):this.tab==='errors'&&admin?this.errorContent():this.tab==='scope'?this.scopeContent():this.testContent();
     this.shadowRoot.innerHTML=`${styles}<div class="ui-card">${panelHeader({title:'Family Access',dirty:this.dirty,busy:this.busy,save:Boolean(admin)})}${this.status?navigation({label:'Family Access',items,active:this.tab==='scope'?'settings':this.tab,settingsLabel:'Einstellungen',help:false}):''}<main>${this.error?feedback(this.error,{kind:'error'}):''}${this.notice?feedback(this.notice,{kind:'success'}):''}${content}</main></div><div id="modal-host"></div>${confirmDialog({id:'discard-dialog',title:'Änderungen verwerfen?',message:'Ungespeicherte Änderungen verwerfen und Rechte neu laden?',confirmLabel:'Verwerfen und neu laden',confirmAction:'confirm-reload',cancelAction:'cancel-reload',danger:true})}`;
     const nav=this.shadowRoot.querySelector('nav');
     if(nav){

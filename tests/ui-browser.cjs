@@ -9,7 +9,7 @@ snapshot.applications=[{"id": "light_manager", "name": "Light Manager", "permiss
 snapshot.dashboards.push({id:'dashboard-long-name',name:'LangeDashboardbezeichnungOhneLeerzeichenDieAufDemHandyUmgebrochenWerdenMuss'},{id:'dashboard-unsafe',name:'<img src=x onerror=alert(1)>'});
 snapshot.error_log=[{time:'2026-11-15T10:00:00Z',user_id:'paul',user_name:'Paul',operation:'read_dashboard',target:'dashboard-parents',reason:'Die Rolle enthält keine Freigabe für dieses Dashboard.',source:'websocket',kind:'denied'}];
 snapshot.error_log.push({...snapshot.error_log[0],user_name:'<img src=x onerror=alert(1)>',reason:'<img src=x onerror=alert(1)> Lange Diagnose für einen sicheren Umbruch auf Mobilgeräten'});
-const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.1.1',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
+const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.1.2',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
 window.fixture={snapshot,status,saves:[],calls:[],state:'off'};
 const hass={user:{id:'manuel'},callWS:async msg=>{window.fixture.calls.push(msg.action);if(msg.action==='admin_panel_status'){if(!status.is_admin)throw Object.assign(new Error('Nur Administratoren'),{code:'unauthorized'});return structuredClone(status);}if(msg.action==='status')return structuredClone(status);if(msg.action==='admin_snapshot'){if(!status.is_admin)throw Error('Nicht freigegeben');return structuredClone(snapshot);}if(msg.action==='admin_sidebar')return {user_id:msg.payload.user_id,token:'fixture-token',visible_dashboards:snapshot.dashboards.map(d=>d.id),default_panel:'dashboard-paul'};if(msg.action==='save_admin_sidebar'){window.fixture.adminSave=structuredClone(msg.payload);return msg.payload;}if(msg.action==='apply_dashboard_order'){window.fixture.orderApply=structuredClone(msg.payload);return {applied:msg.payload.user_ids,failed:[]};}if(msg.action==='save_policy'){if(!status.is_admin)throw Error('Nicht freigegeben');snapshot.policy=structuredClone(msg.payload);snapshot.policy.revision++;window.fixture.saves.push(structuredClone(msg.payload));for(const u of snapshot.users.filter(u=>u.admin)){delete snapshot.policy.bindings[u.id];snapshot.policy.enabled_users=snapshot.policy.enabled_users.filter(id=>id!==u.id);}return {revision:snapshot.policy.revision,policy:structuredClone(snapshot.policy)};}if(msg.action==='read_entity')return {state:window.fixture.state};if(msg.action==='call_service'){if(!status.is_admin)throw Error('Nicht freigegeben');window.fixture.state=window.fixture.state==='off'?'on':'off';return {executed:true};}if(msg.action==='admin_error_log'){if(!status.is_admin)throw Error('Nicht freigegeben');return {events:structuredClone(snapshot.error_log),limit:200};}if(msg.action==='read_dashboard'){if(!status.is_admin)throw Error('Nicht freigegeben');return {views:[]};}throw Error('Unknown action');},callApi:async()=>({result:structuredClone(status)})};
 window.fixture.hass=hass;const app=document.createElement('family-access-panel');document.body.append(app);app.hass=hass;window.app=app;
@@ -27,11 +27,19 @@ const server=http.createServer((req,res)=>{
  try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
   const app=page.locator('family-access-panel');await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).waitFor();
-  const pages=[['users','Benutzer'],['roles','Rollen'],['errors','Fehler'],['settings','Einstellungen'],...(await page.evaluate(()=>window.fixture.snapshot.applications)).map(x=>['app-'+x.id,x.name])];
+  const pages=[['users','Benutzer'],['dashboards','Dashboards'],['roles','Rollenverwaltung'],['errors','Fehler'],['settings','Einstellungen'],...(await page.evaluate(()=>window.fixture.snapshot.applications)).map(x=>['app-'+x.id,x.name])];
   for(const width of [1100,430,390,375,320])for(const theme of ['light','dark']){
    await page.setViewportSize({width,height:1000});await page.evaluate(dark=>document.body.classList.toggle('dark',dark),theme==='dark');
    for(const [id,label] of pages){
     await app.locator('.card-top').getByRole('button',{name:label,exact:true}).click();
+    if(id==='dashboards'){
+      assert.equal(await app.getByRole('searchbox',{name:'Dashboards suchen',exact:true}).count(),1);
+      assert.equal(await app.locator('[data-action="add-role"],[data-action="rename-role"],[data-action="delete-role"]').count(),0);
+    }
+    if(id==='roles'){
+      assert.equal(await app.locator('#dashboard-rows,[data-action="dashboard-grant"],[data-action="apply-order"]').count(),0);
+      assert.equal(await app.getByRole('button',{name:'Rolle umbenennen',exact:true}).count(),1);
+    }
     const activeTab=app.locator('nav [aria-current="page"]');
     if(await activeTab.count()){
       const position=await activeTab.evaluate(el=>{const a=el.getBoundingClientRect(),n=el.closest('nav').getBoundingClientRect();return {left:a.left-n.left,right:a.right-n.right};});
@@ -42,7 +50,7 @@ const server=http.createServer((req,res)=>{
     assert.deepEqual(bad,[],'No control overflow: '+[width,theme,id]);
     const compared=await page.evaluate(async({base,id})=>{
      const kit=await import(base+'family-ui/1.6.0/family-ui.js'),ref=document.createElement('div');ref.attachShadow({mode:'open'});document.body.append(ref);
-     ref.shadowRoot.innerHTML='<style>'+kit.UI_CSS+'</style><div class="ui-card">'+kit.panelHeader({title:'Family Access'})+kit.navigation({label:'Family Access',items:[{id:'users',label:'Benutzer'},{id:'roles',label:'Rollen'},{id:'errors',label:'Fehler'}],active:id,help:false,settingsLabel:'Einstellungen'})+'<main>'+kit.section({id:'ref',title:'Benutzer',content:kit.row({title:'Paul',description:'Benutzer',trailing:kit.toggle({label:'Schalter',action:'noop',checked:document.querySelector('family-access-panel').shadowRoot.querySelector('[role="switch"]')?.getAttribute('aria-checked')==='true'})})+kit.selectField({id:'ref-select',label:'Rolle',value:'none',options:[{value:'none',label:'Kein Zugriff'}]})})+'<div id="user-reference">'+kit.userAccessRow({id:'reference',title:'Paul',description:'Eingeschränkt',value:'family',options:[{value:'family',label:'Maximilian'}],enabled:true})+kit.row({title:'Next'})+'</div></main></div>';
+     ref.shadowRoot.innerHTML='<style>'+kit.UI_CSS+'</style><div class="ui-card">'+kit.panelHeader({title:'Family Access'})+kit.navigation({label:'Family Access',items:[{id:'users',label:'Benutzer'},{id:'dashboards',label:'Dashboards'},{id:'roles',label:'Rollenverwaltung'},{id:'errors',label:'Fehler'}],active:id,help:false,settingsLabel:'Einstellungen'})+'<main>'+kit.section({id:'ref',title:'Benutzer',content:kit.row({title:'Paul',description:'Benutzer',trailing:kit.toggle({label:'Schalter',action:'noop',checked:document.querySelector('family-access-panel').shadowRoot.querySelector('[role="switch"]')?.getAttribute('aria-checked')==='true'})})+kit.selectField({id:'ref-select',label:'Rolle',value:'none',options:[{value:'none',label:'Kein Zugriff'}]})})+'<div id="user-reference">'+kit.userAccessRow({id:'reference',title:'Paul',description:'Eingeschränkt',value:'family',options:[{value:'family',label:'Maximilian'}],enabled:true})+kit.row({title:'Next'})+'</div></main></div>';
      const actual=document.querySelector('family-access-panel').shadowRoot,pairs=[['.fui-panel-header',['padding','gap','minHeight','backgroundColor']],['.fui-panel-header strong',['fontFamily','fontSize','fontWeight']],['nav button',['padding','fontSize','fontWeight','color']],['main',['padding']],['.settings-fold span',['fontSize','fontWeight']],['.row-text strong',['fontSize','fontWeight','lineHeight']],['.row-text small',['fontSize','color']],['select',['padding','borderRadius','fontSize','color','backgroundColor']],['.switch-track',['width','height','backgroundColor']],['.switch-thumb',['width','height']],['button.primary',['backgroundColor','color','borderRadius','padding','fontSize']]];
      const user=actual.querySelector('[data-access-user="paul"]'),userRef=ref.shadowRoot.querySelector('[data-access-user="reference"]');
      if(user&&userRef){const keys=['display','gridTemplateColumns','gap','padding','borderBottomWidth'];const a=getComputedStyle(user),b=getComputedStyle(userRef);window.userComparison={actual:Object.fromEntries(keys.map(k=>[k,a[k]])),reference:Object.fromEntries(keys.map(k=>[k,b[k]]))};}else window.userComparison=null;
@@ -88,18 +96,18 @@ const server=http.createServer((req,res)=>{
   assert.deepEqual(await page.evaluate(()=>window.app.policy.bindings.max),['family'],'Deactivation retains the role');
   await maxSwitch.click();
   assert.equal(await maxSwitch.evaluate(el=>el===el.getRootNode().activeElement),true,'Toggling retains keyboard focus');
-  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();assert.equal(await app.locator('img').count(),0);
+  await app.locator('.card-top').getByRole('button',{name:'Dashboards',exact:true}).click();assert.equal(await app.locator('img').count(),0);
   await app.getByRole('switch',{name:'Dashboard Eltern freigeben',exact:true}).click();
   await app.getByRole('button',{name:'Neu laden',exact:true}).click();
   const modal=app.getByRole('dialog',{name:'Änderungen verwerfen?',exact:true});await modal.waitFor();
   await page.keyboard.press('Escape');assert.equal(await modal.isVisible(),false);assert.equal(await app.getByRole('button',{name:'Neu laden',exact:true}).evaluate(el=>el===el.getRootNode().activeElement),true);
   await app.getByRole('button',{name:'Neu laden',exact:true}).click();await modal.getByRole('button',{name:'Abbrechen',exact:true}).click();assert.equal(await modal.isVisible(),false);
   await app.getByRole('button',{name:'Änderungen speichern',exact:true}).click();await app.getByRole('status').filter({hasText:'Rechte gespeichert'}).waitFor();assert.equal(await page.evaluate(()=>window.fixture.saves.at(-1).roles.family.dashboards['dashboard-parents']),'view');
-  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();await app.getByRole('searchbox',{name:'Dashboards suchen',exact:true}).fill('Eltern');assert.equal(await app.locator('#dashboard-rows .setting-row').count(),1);await app.getByRole('searchbox',{name:'Dashboards suchen',exact:true}).fill('');
+  await app.locator('.card-top').getByRole('button',{name:'Dashboards',exact:true}).click();await app.getByRole('searchbox',{name:'Dashboards suchen',exact:true}).fill('Eltern');assert.equal(await app.locator('#dashboard-rows .setting-row').count(),1);await app.getByRole('searchbox',{name:'Dashboards suchen',exact:true}).fill('');
   await app.locator('.card-top').getByRole('button',{name:'Einstellungen',exact:true}).click();await app.getByRole('button',{name:'Diagnose',exact:true}).click();await app.getByRole('button',{name:'HTTP und WebSocket prüfen',exact:true}).click();await app.getByRole('textbox',{name:'Ergebnis',exact:true}).waitFor();assert((await app.getByRole('textbox',{name:'Ergebnis',exact:true}).inputValue()).includes('Dieselbe Prüfinstanz erreicht'));
   await app.getByRole('button',{name:'Konfiguration abrufen',exact:true}).first().click();
   assert((await app.getByRole('textbox',{name:'Ergebnis',exact:true}).inputValue()).includes('views'));
-  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();
+  await app.locator('.card-top').getByRole('button',{name:'Rollenverwaltung',exact:true}).click();
   await app.getByRole('button',{name:'Rolle umbenennen',exact:true}).click();await app.getByRole('textbox',{name:'Neuer Name',exact:true}).fill('Vorbereitete Rolle');await app.getByRole('dialog',{name:'Rolle umbenennen',exact:true}).getByRole('button',{name:'Übernehmen',exact:true}).click();
   await app.locator('.card-top').getByRole('button',{name:'Fehler',exact:true}).click();
   await app.getByRole('button',{name:'Aktualisieren',exact:true}).click();
@@ -110,12 +118,12 @@ const server=http.createServer((req,res)=>{
   // Shared dialogs and controls at every requested width and both themes.
   for(const width of [1100,430,390,375,320])for(const theme of ['light','dark']){
     await page.setViewportSize({width,height:1000});await page.evaluate(dark=>document.body.classList.toggle('dark',dark),theme==='dark');
-    await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();
+    await app.locator('.card-top').getByRole('button',{name:'Rollenverwaltung',exact:true}).click();
     await app.getByRole('button',{name:'Rolle umbenennen',exact:true}).click();
     for(const [kind,title] of [['rename','Rolle umbenennen'],['order','Reihenfolge übernehmen'],['admin','Dashboards für Manuel'],['delete','Rolle löschen?']]){
-      if(kind==='order')await app.getByRole('button',{name:'Reihenfolge übernehmen',exact:true}).click();
+      if(kind==='order'){await app.locator('.card-top').getByRole('button',{name:'Dashboards',exact:true}).click();await app.getByRole('button',{name:'Reihenfolge übernehmen',exact:true}).click();}
       if(kind==='admin'){await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).click();await app.getByRole('button',{name:'Dashboards für Manuel',exact:true}).click();}
-      if(kind==='delete'){await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();await app.getByRole('combobox',{name:'Rolle',exact:true}).selectOption('unused');await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();}
+      if(kind==='delete'){await app.locator('.card-top').getByRole('button',{name:'Rollenverwaltung',exact:true}).click();await app.getByRole('combobox',{name:'Rolle',exact:true}).selectOption('unused');await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();}
       const modal=app.getByRole('dialog',{name:title,exact:true});await modal.waitFor();
       const overflow=await modal.evaluate(el=>[el,...el.querySelectorAll('.modal-body,.modal-head,footer,.fui-selection-list,.cover-option')].filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>n.className));
       assert.deepEqual(overflow,[],'Dialog overflow '+[kind,width,theme]);
@@ -127,7 +135,7 @@ const server=http.createServer((req,res)=>{
       results.push({width,theme,page:kind+'-dialog',matched:3});
     }
   }
-  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();
+  await app.locator('.card-top').getByRole('button',{name:'Dashboards',exact:true}).click();
   assert.equal(await app.locator('#unchosen-dashboards-content [data-action="move-dashboard"]').count(),0,'Unchosen dashboards have no sort controls');
   await page.evaluate(()=>{window.app.policy.bindings.manuel=['family'];window.app.policy.enabled_users.push('manuel');});
   const beforeOrder=await page.evaluate(()=>window.app.selectedDashboards().map(d=>d.id));
@@ -154,10 +162,10 @@ const server=http.createServer((req,res)=>{
   await app.getByRole('status').filter({hasText:'Admin-Seitenleiste gespeichert'}).waitFor();
   await app.locator('.card-top').getByRole('button',{name:'Einstellungen',exact:true}).click();
   assert.equal(await app.locator('#versions-content').isVisible(),true);
-  assert((await app.locator('#versions-content').textContent()).includes('Oberfläche 1.1.1'));
-  assert((await app.locator('#versions-content').textContent()).includes('Integration 1.1.1'));
+  assert((await app.locator('#versions-content').textContent()).includes('Oberfläche 1.1.2'));
+  assert((await app.locator('#versions-content').textContent()).includes('Integration 1.1.2'));
   assert((await app.locator('#versions-content').textContent()).includes('UI 1.6.0'));
-  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();
+  await app.locator('.card-top').getByRole('button',{name:'Rollenverwaltung',exact:true}).click();
   await app.getByRole('combobox',{name:'Rolle',exact:true}).selectOption('unused');
   await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();
   await app.getByRole('dialog',{name:'Rolle löschen?',exact:true}).getByRole('button',{name:'Abbrechen',exact:true}).click();
@@ -175,9 +183,9 @@ const server=http.createServer((req,res)=>{
   assert.equal(await app.locator('[data-action="save"]').count(),0);
   assert.equal(await app.locator('[data-access-user]').count(),0);
   assert.equal(await page.evaluate(()=>window.app.snapshot),null);
-  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(root,'test-results/validation.json'),JSON.stringify({ui:'1.6.0',variants:results,actions:['user_activation','user_assignment','controlled_switch','permission_save','search','escaping','native_dialog_escape','cancel_and_focus','http_ws_check','dashboard_read','admin_error_protocol','restricted_panel_denied'],consoleErrors:errors},null,2));
+  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(root,'test-results/validation.json'),JSON.stringify({ui:'1.6.0',variants:results,actions:['separate_role_management','dashboard_grants_and_order','user_activation','user_assignment','controlled_switch','permission_save','search','escaping','native_dialog_escape','cancel_and_focus','http_ws_check','dashboard_read','admin_error_protocol','restricted_panel_denied'],consoleErrors:errors},null,2));
   console.log(JSON.stringify({variants:results.length,themes:2,widths:[1100,430,390,375,320],behavior:'passed'}));
-  if(process.env.CI)for(const name of ['users-1100-light.png','users-390-dark.png','roles-1100-dark.png','roles-390-light.png','admin-dialog-390-light.png','order-dialog-390-light.png','delete-dialog-390-light.png','settings-390-dark.png']){
+  if(process.env.CI)for(const name of ['users-1100-light.png','users-390-dark.png','dashboards-1100-dark.png','dashboards-390-light.png','roles-1100-dark.png','roles-390-light.png','admin-dialog-390-light.png','order-dialog-390-light.png','delete-dialog-390-light.png','settings-390-dark.png']){
     const encoded=fs.readFileSync(path.join(root,'test-results',name)).toString('base64'),size=16000,count=Math.ceil(encoded.length/size);
     console.log('FAM_VISUAL_META '+JSON.stringify({name,chunks:count,length:encoded.length}));
     for(let i=0;i<count;i++)console.log('FAM_VISUAL_DATA '+name+' '+i+' '+encoded.slice(i*size,(i+1)*size));
