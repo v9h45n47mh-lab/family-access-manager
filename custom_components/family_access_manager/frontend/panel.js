@@ -18,9 +18,11 @@ class FamilyAccessPanel extends HTMLElement {
     });
   }
   connectedCallback() {
+    this.vacationWatching=false;this.watchVacation();
     this.unbind ||= bindUI(this.shadowRoot, event => {
       if (event.action === 'close-modal') { this.closeModal();return; }
       if (event.action === 'navigate') { this.tab=event.data.page==='settings'?'scope':event.data.page; this.render(); return; }
+      if(event.action==='vacation-change'){this.setVacation(event.checked);return;}
       if(event.action==='application-grant'){
         const {application,permission}=event.data,role=this.policy.roles[this.roleId];
         const grants=role.applications[application] ||= {};
@@ -61,11 +63,14 @@ class FamilyAccessPanel extends HTMLElement {
       this.click({target:event.element});
     });
   }
-  disconnectedCallback() { this.unbind?.(); this.unbind=null; }
+  disconnectedCallback() { this.unbind?.(); this.unbind=null;this.vacationUnsub?.();this.vacationUnsub=null;this.vacationEpoch=(this.vacationEpoch||0)+1; }
   set hass(value) {
+    const connectionChanged=this._hass?.connection!==value?.connection;
     this._hass=value;
+    if(connectionChanged||this.who!==value?.user?.id){this.vacationUnsub?.();this.vacationUnsub=null;this.vacationEpoch=(this.vacationEpoch||0)+1;this.vacationWatching=false;}
     const who=value?.user?.id;
     if (who && this.who !== who) { this.who=who; this.status=null; this.snapshot=null; this.policy=null; this.errorLog=[]; this.output=null; this.notice=""; this.accessDenied=false; this.reload(); }
+    else if(connectionChanged)this.watchVacation();
   }
   set narrow(value) { this.toggleAttribute("narrow", value); }
   set panel(value) { this._panel=value; }
@@ -80,11 +85,34 @@ class FamilyAccessPanel extends HTMLElement {
         this.errorLog=structuredClone(this.snapshot.error_log||[]);
         if (!this.policy.roles[this.roleId]) this.roleId=Object.keys(this.policy.roles)[0] || "";
       } else this.tab="test";
-      this.dirty=false; this.error="";
+      this.dirty=false; this.error="";this.watchVacation();
     } catch(e) { if(e.code==="unauthorized")this.denyAccess();else this.error=e.message || String(e); }
     finally { this.busy=false; this.render(); }
   }
+  async watchVacation(){
+    if(this.vacationUnsub||this.vacationWatching||!this._hass?.connection?.subscribeEvents||!this.status?.is_admin)return;
+    const epoch=this.vacationEpoch||0;this.vacationWatching=true;
+    try{
+      const unsubscribe=await this._hass.connection.subscribeEvents(async()=>{
+        try{const state=await this.api('vacation_status');if(epoch===(this.vacationEpoch||0)&&this.snapshot){this.snapshot.vacation=state;if(this.tab==='scope'&&!this.vacationBusy)this.render();}}
+        catch{}
+      },'family_access_vacation_updated');
+      if(epoch!==(this.vacationEpoch||0))unsubscribe();else this.vacationUnsub=unsubscribe;
+    }catch{}finally{if(epoch===(this.vacationEpoch||0))this.vacationWatching=false;}
+  }
+  async setVacation(enabled){
+    if(this.vacationBusy||!this.snapshot?.vacation)return;
+    this.vacationBusy=true;this.error='';this.render();
+    try{
+      this.snapshot.vacation=await this.api('set_vacation',{enabled,revision:this.snapshot.vacation.revision});
+      this.notice='Urlaubsmodus '+(enabled?'eingeschaltet.':'ausgeschaltet.');
+    }catch(error){
+      this.error=error.message||String(error);
+      try{this.snapshot.vacation=await this.api('vacation_status');}catch{}
+    }finally{this.vacationBusy=false;this.render();this.shadowRoot.querySelector('[data-action="vacation-change"]')?.focus({preventScroll:true});}
+  }
   denyAccess() {
+    this.vacationUnsub?.();this.vacationUnsub=null;this.vacationEpoch=(this.vacationEpoch||0)+1;
     this.accessDenied=true; this.status={is_admin:false}; this.snapshot=null; this.policy=null; this.errorLog=[]; this.output=null; this.notice=""; this.dirty=false;
   }
   markDirty() {
@@ -283,8 +311,9 @@ class FamilyAccessPanel extends HTMLElement {
   }
   scopeContent() {
     const facts=[['Dashboardfreigaben','Rollen und Benutzeraktivierung'],['Seitenleiste',this.status.sidebar_filter?'Nach Rollen gefiltert':this.status.sidebar_available?'Für aktivierte Benutzer gefiltert':'Nicht verfügbar'],['Native Dashboard-Konfigurationen',this.status.native_dashboard_gate&&this.status.gate_available?'Sperre eingeschaltet':'Sperre ausgeschaltet'],['Geräte- und Systemrechte','Durch Home Assistant verwaltet'],['Nabu Casa auf deiner Instanz','Vor Ort zu prüfen']];
-    return section({id:'activation',title:'Zugriffsschutz',content:row({title:'Dashboard-Konfigurationen sperren',description:'Blockiert nicht freigegebene Dashboard-Konfigurationen für aktivierte Benutzer.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',iconOnly:true,checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})})
-      +section({id:'versions',title:'Versionen',content:versionInfo({frontend:'1.1.2',backend:this.status.version,ui:UI_VERSION})})
+    return section({id:'vacation',title:'Urlaubsmodus',content:row({title:'Urlaubsmodus für alle Anwendungen',description:'Zentraler Status für Light Manager, Shutter Manager und Hausarbeiten. Änderungen werden sofort gespeichert; die Programme behalten ihre eigene Einstellung zum Pausieren im Urlaub.',trailing:toggle({label:'Urlaubsmodus für alle Anwendungen',action:'vacation-change',iconOnly:true,checked:Boolean(this.snapshot.vacation?.enabled),disabled:this.vacationBusy||!this.snapshot.vacation})})+feedback('Bisherige aktive Urlaubsmodi werden einmalig übernommen. Danach gilt ausschließlich dieser zentrale Schalter. Vergangene Urlaubstage bleiben für Hausarbeiten erhalten.')})
+      +section({id:'activation',title:'Zugriffsschutz',content:row({title:'Dashboard-Konfigurationen sperren',description:'Blockiert nicht freigegebene Dashboard-Konfigurationen für aktivierte Benutzer.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',iconOnly:true,checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})})
+      +section({id:'versions',title:'Versionen',content:versionInfo({frontend:'1.2.0',backend:this.status.version,ui:UI_VERSION})})
       +section({id:'diagnosis',title:'Diagnose',expanded:Boolean(this.output),content:this.testContent()})
       +section({id:'scope',title:'Hinweise',expanded:false,content:facts.map(([title,description])=>row({title,description})).join('')
       +helpContent({content:'<p>Family Access verwaltet Anwendungsrechte je Rolle sowie Dashboardzugriff und Navigation. Freigegebene Dashboards benötigen keine zusätzlichen Gerätefreigaben. Vorhandene HA-Benutzerrechte, Gruppen, Tokens und Netzwerkeinstellungen bleiben bestehen.</p><p>Die zusätzliche Dashboard-Sperre schützt neue Konfigurationsanfragen. Bereits geladene Inhalte lassen sich nicht zurückholen. Profil und feste Konto-/Benachrichtigungselemente bleiben erreichbar. Beim Entfernen der Integration entfällt die Filterung.</p>'})})

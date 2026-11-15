@@ -10,12 +10,13 @@ vm.runInContext('const esc=escapeHtml;',context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family_access_manager/frontend/panel.js'),'utf8').replace(/^import[^\n]*\n/,''),context);
 const panel=window.document.querySelector('family-access-panel');
 const policy={revision:0,native_dashboard_gate:false,device_control:false,imported_applications:[],roles:{family:{name:'Kinder',dashboard_order:[],dashboards:{'dashboard-paul':'control'},entities:{},areas:{},labels:{},applications:{}}},bindings:{paul:['family']},enabled_users:['paul']};
-const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.1.2',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
+const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.2.0',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
 const snapshot={policy,users:[{id:'manuel',name:'Manuel',admin:true,active:true},{id:'paul',name:'Paul',admin:false,active:true}],dashboards:[{id:'dashboard-paul',name:'Paul'}],entities:[{id:'switch.probe',name:'Testschalter'},{id:'light.paul',name:'<img src=x onerror=alert(1)>'}],areas:[],labels:[],events:[]};
-snapshot.applications=[{"id": "light_manager", "name": "Light Manager", "permissions": {"view": "Programme ansehen", "manage": "Programme und Einstellungen verwalten"}, "connected": true}, {"id": "rollladenplaner", "name": "Shutter Manager", "permissions": {"view": "Programme ansehen", "control": "Programme bedienen und Fahrten ändern", "manage": "Programme und Einstellungen verwalten"}, "connected": true}, {"id": "essensplaner", "name": "Essensplaner", "permissions": {"view": "Essensplan ansehen", "plan": "Essen eintragen und eigene Einträge löschen", "edit_others": "Einträge anderer Benutzer ändern", "delete_others": "Einträge anderer Benutzer löschen", "manage_catalog": "Gerichte und Gerichtskatalog verwalten"}, "connected": true}, {"id": "hausarbeiten_manager", "name": "Hausarbeiten", "permissions": {"view": "Eigene Aufgaben ansehen und bearbeiten", "manage": "Aufgaben aller Familienmitglieder verwalten", "settings": "Urlaub und Einstellungen verwalten"}, "connected": true}, {"id": "gartenarbeit_manager", "name": "Gartenarbeit", "permissions": {"view": "Eigenes Zeitkonto und eigene Buchungen", "manage": "Alle Konten, Buchungen und Freigaben verwalten"}, "connected": true}, {"id": "spuelmaschine_verlauf", "name": "Spülmaschine", "permissions": {"view": "Verlauf und Statistik ansehen", "confirm_own": "Eigenen Ausräumdienst bestätigen", "confirm_any": "Ausräumen unabhängig vom Dienst bestätigen", "manage": "Spülgänge manuell erfassen", "statistics": "Statistik und Einstellungen ansehen"}, "connected": true}, {"id": "music_manager", "name": "Music Manager", "permissions": {"view": "Musikansicht verwenden", "play": "Musik und eigene Weckmusik bedienen", "manage": "Anwendungskonfiguration ansehen", "alarms_others": "Weckmusik anderer Benutzer verwalten", "select_speaker": "Persönliche Box auswählen", "alarm_songs": "Eigene Wecklieder verwenden"}, "connected": true}, {"id": "wecker_manager", "name": "Wecker", "permissions": {"view": "Eigene Wecker ansehen", "use_own": "Eigene Wecker bedienen und ändern", "manage": "Wecker und Tagestypen aller Benutzer verwalten"}, "connected": true}];
+snapshot.vacation={revision:0,enabled:false,started:null,periods:[],imported:[],managed:false,available:true,consumers:[]};
+snapshot.applications=[{"id": "light_manager", "name": "Light Manager", "permissions": {"view": "Programme ansehen", "manage": "Programme und Einstellungen verwalten"}, "connected": true}, {"id": "rollladenplaner", "name": "Shutter Manager", "permissions": {"view": "Programme ansehen", "control": "Programme bedienen und Fahrten ändern", "manage": "Programme und Einstellungen verwalten"}, "connected": true}, {"id": "essensplaner", "name": "Essensplaner", "permissions": {"view": "Essensplan ansehen", "plan": "Essen eintragen und eigene Einträge löschen", "edit_others": "Einträge anderer Benutzer ändern", "delete_others": "Einträge anderer Benutzer löschen", "manage_catalog": "Gerichte und Gerichtskatalog verwalten"}, "connected": true}, {"id": "hausarbeiten_manager", "name": "Hausarbeiten", "permissions": {"view": "Eigene Aufgaben ansehen und bearbeiten", "manage": "Aufgaben aller Familienmitglieder verwalten", "settings": "Einstellungen verwalten"}, "connected": true}, {"id": "gartenarbeit_manager", "name": "Gartenarbeit", "permissions": {"view": "Eigenes Zeitkonto und eigene Buchungen", "manage": "Alle Konten, Buchungen und Freigaben verwalten"}, "connected": true}, {"id": "spuelmaschine_verlauf", "name": "Spülmaschine", "permissions": {"view": "Verlauf und Statistik ansehen", "confirm_own": "Eigenen Ausräumdienst bestätigen", "confirm_any": "Ausräumen unabhängig vom Dienst bestätigen", "manage": "Spülgänge manuell erfassen", "statistics": "Statistik und Einstellungen ansehen"}, "connected": true}, {"id": "music_manager", "name": "Music Manager", "permissions": {"view": "Musikansicht verwenden", "play": "Musik und eigene Weckmusik bedienen", "manage": "Anwendungskonfiguration ansehen", "alarms_others": "Weckmusik anderer Benutzer verwalten", "select_speaker": "Persönliche Box auswählen", "alarm_songs": "Eigene Wecklieder verwenden"}, "connected": true}, {"id": "wecker_manager", "name": "Wecker", "permissions": {"view": "Eigene Wecker ansehen", "use_own": "Eigene Wecker bedienen und ändern", "manage": "Wecker und Tagestypen aller Benutzer verwalten"}, "connected": true}];
 snapshot.dashboards.push({id:'dashboard-unsafe',name:'<img src=x onerror=alert(1)>'});
 snapshot.error_log=[{time:'2026-11-15T10:00:00Z',user_id:'paul',user_name:'Paul',operation:'read_dashboard',target:'dashboard-parents',reason:'Keine Dashboardfreigabe',source:'websocket',kind:'denied'}];
-let saves=0;
+let saves=0,vacationSaves=0,rejectVacation=false;
 snapshot.users.push({id:'test',name:'Testuser',admin:false,active:true});
 const settle=()=>new Promise(setImmediate);
 const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);assert(el,selector);el.click();};
@@ -24,6 +25,8 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
     if(msg.action==='status'||msg.action==='admin_panel_status')return structuredClone(status);
     if(msg.action==='admin_snapshot')return structuredClone(snapshot);
     if(msg.action==='admin_error_log')return {events:structuredClone(snapshot.error_log),limit:200};
+    if(msg.action==='vacation_status')return structuredClone(snapshot.vacation);
+    if(msg.action==='set_vacation'){vacationSaves++;if(rejectVacation){rejectVacation=false;throw Error('Urlaub konnte nicht gespeichert werden');}snapshot.vacation={...snapshot.vacation,...msg.payload,revision:snapshot.vacation.revision+1};return structuredClone(snapshot.vacation);}
     if(msg.action==='save_policy'){saves++;snapshot.policy=structuredClone(msg.payload);return {revision:1};}
     throw Error('unexpected action');
   },callApi:async()=>({result:status})};
@@ -78,7 +81,15 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   assert.equal(panel.policy.roles.family.applications.essensplaner.view,true);
   click('[data-action="application-grant"][data-permission="view"]');
   assert.equal(panel.policy.roles.family.applications.essensplaner.delete_others,false);
-  click('[data-action="navigate"][data-page="settings"]');click('[data-action="api-check"]');await settle();
+  click('[data-action="navigate"][data-page="settings"]');
+  const draft=JSON.stringify(panel.policy),beforeSaves=saves;
+  click('[data-action="vacation-change"]');await settle();
+  assert.equal(snapshot.vacation.enabled,true);assert.equal(vacationSaves,1);
+  assert.equal(JSON.stringify(panel.policy),draft);assert.equal(saves,beforeSaves,'Vacation never submits a policy draft');
+  assert.equal(panel.dirty,true,'Unsaved rights stay dirty');
+  rejectVacation=true;click('[data-action="vacation-change"]');await settle();
+  assert.equal(panel.snapshot.vacation.enabled,true,'Failed vacation save retains confirmed mode');
+  click('[data-action="api-check"]');await settle();
   assert(panel.shadowRoot.innerHTML.includes('Dieselbe Prüfinstanz erreicht'));
   click('[data-action="navigate"][data-page="roles"]');
   assert.equal(panel.shadowRoot.querySelector('#dashboard-rows'),null,'Role administration has no dashboard grants');
@@ -100,7 +111,7 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   click('[data-action="navigate"][data-page="settings"]');
   const versions=panel.shadowRoot.querySelector('#versions-content');
   assert(versions&&!versions.hidden);
-  assert(versions.textContent.includes('1.1.2')&&versions.textContent.includes('1.6.0'));
+  assert(versions.textContent.includes('1.2.0')&&versions.textContent.includes('1.6.0'));
   click('[data-action="navigate"][data-page="roles"]');
   click('[data-action="add-role"]');
   const newRole=panel.roleId;

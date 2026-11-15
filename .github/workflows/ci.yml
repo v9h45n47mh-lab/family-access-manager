@@ -22,6 +22,37 @@ jobs:
       - run: python -m pip install -r requirements-test.txt
       - run: python -m pytest
 
+  vacation-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: v9h45n47mh-lab/light-manager
+          ref: 076c6893ccf8f2c14dc2f58369c3b01dd69135d0
+          path: .test-deps/light-manager
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: v9h45n47mh-lab/shutter-manager
+          ref: cec20718f8c67d3b868c1ee0458a1ac24abaef2d
+          path: .test-deps/shutter-manager
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: v9h45n47mh-lab/hausarbeiten-manager
+          ref: c8f69fec6b4d44656ee32cf2d4dd8c8fad8c43ae
+          path: .test-deps/hausarbeiten-manager
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: python -m pip install -r requirements-test.txt
+      - name: Verify actual vacation consumers against HA
+        env:
+          VACATION_CONSUMER_ROOT: ${{ github.workspace }}/.test-deps
+        run: python -m pytest tests/test_vacation.py tests/test_vacation_consumers.py
+
   current-core-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -63,7 +94,7 @@ jobs:
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release ')
-    needs: [ha-tests, current-core-smoke, panel-and-package]
+    needs: [ha-tests, vacation-integration, current-core-smoke, panel-and-package]
     runs-on: ubuntu-latest
     permissions:
       contents: write

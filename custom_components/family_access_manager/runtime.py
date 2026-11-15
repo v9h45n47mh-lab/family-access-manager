@@ -8,6 +8,7 @@ import uuid
 import hashlib
 import json
 
+from .vacation import Vacation
 from .applications import APPLICATIONS, APPLICATION_PROTOCOL, APPLICATION_CLIENTS, APPLICATION_EVENT
 
 from homeassistant.core import Context
@@ -38,10 +39,12 @@ class Conflict(Exception):
 
 class Runtime:
     application_protocol = APPLICATION_PROTOCOL
+    vacation_protocol = 1
 
     def __init__(self, hass):
         self.hass = hass
         self.store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+        self.vacation = Vacation(hass)
         self.policy = Policy(default_policy())
         self.lock = asyncio.Lock()
         self.events = deque(maxlen=200)
@@ -62,6 +65,7 @@ class Runtime:
                 await self.store.async_save(migrated)
             self.policy = next_policy
         await self.error_log.load()
+        await self.vacation.load()
 
     def audit(self, user_id, operation, target, allowed):
         self.events.appendleft({
@@ -147,6 +151,15 @@ class Runtime:
         if action == "admin_panel_status":
             self.require_admin(user)
             return await self._dispatch(user, "status", payload)
+        if action in {"vacation_status", "set_vacation"}:
+            self.require_admin(user)
+            if action == 'vacation_status':
+                if payload:raise ValueError('Diese Anfrage benötigt keine Parameter.')
+                return self.vacation.snapshot()
+            if set(payload) not in ({'enabled'}, {'enabled','revision'}):raise ValueError('Ungültige Anfrage.')
+            result=await self.vacation.set(payload['enabled'],payload.get('revision'))
+            self.audit(user.id,'set_vacation','Urlaubsmodus',True)
+            return result
         if action == "admin_error_log":
             self.require_admin(user)
             if payload:
@@ -183,6 +196,7 @@ class Runtime:
                 "dashboards": self.dashboard_catalog(),
                 "events": list(self.events),
                 "error_log": self.error_log.snapshot(),
+                "vacation": self.vacation.snapshot(),
                 "applications": [{"id":app, **descriptor, "connected": app in self.hass.data.get(APPLICATION_CLIENTS,{})} for app,descriptor in APPLICATIONS.items()],
             }
         if action == "save_policy":
