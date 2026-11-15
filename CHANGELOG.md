@@ -1,5 +1,9 @@
 # Änderungen
 
+## 1.1.1
+
+Die aktive Anwendung bleibt auf Mobilgeräten beim Wechseln und Bearbeiten von Rollen in der horizontalen Tab-Leiste sichtbar. Berechtigungsschalter behalten ihren Tastaturfokus nach Änderungen. Originalkomponenten und Styles des HA UI Kit 1.6.0 bleiben unverändert. Zentrale Anwendungsrechte und Übernahme aus Version 1.1.0 bleiben erhalten.
+
 ## 1.1.0
 
 Acht eigene Anwendungstabs: Light Manager, Shutter Manager, Essensplaner, Hausarbeiten, Gartenarbeit, Spülmaschine, Music Manager und Wecker. Mehrfachrollen sind in der Benutzerverwaltung auswählbar. Fehlgeschlagene Anwendungsprüfungen erscheinen im bestehenden Fehlerprotokoll. Rollen werden weiterhin erst nach Bestätigung gelöscht.
