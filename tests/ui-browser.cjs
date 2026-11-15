@@ -246,6 +246,7 @@ const server=http.createServer((req,res)=>{
   await app.getByRole('status').filter({hasText:'Rechte gespeichert'}).waitFor();
   assert.equal(await app.getByRole('combobox',{name:'Darstellung',exact:true}).inputValue(),await page.evaluate(()=>window.app.roleId));
   await app.locator('.card-top').getByRole('button',{name:'Spülmaschine',exact:true}).click();
+  await app.getByRole('combobox',{name:'App-Rolle',exact:true}).selectOption('user');
   const ownDuty=app.getByRole('switch',{name:'Eigenen Ausräumdienst bestätigen',exact:true}),history=app.getByRole('switch',{name:'Verlauf und Statistik ansehen',exact:true});
   await ownDuty.click();assert.equal(await history.getAttribute('aria-checked'),'false');
   await history.click();await history.click();assert.equal(await ownDuty.getAttribute('aria-checked'),'true');
