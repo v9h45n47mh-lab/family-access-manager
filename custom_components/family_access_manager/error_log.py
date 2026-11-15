@@ -35,7 +35,7 @@ def request_target(action, payload):
         values = payload.get("entity_ids", [])
         if isinstance(values, list):
             return safe_text(", ".join(v for v in values[:5] if isinstance(v, str) and _ENTITY.fullmatch(v))) or "Geräteaktion"
-    return "Verwaltung" if action in {"save_policy", "admin_snapshot", "admin_error_log", "admin_panel_status"} else "Anfrage"
+    return "Verwaltung" if action in {"save_policy", "admin_snapshot", "admin_error_log", "admin_panel_status", "admin_sidebar", "save_admin_sidebar", "apply_dashboard_order"} else "Anfrage"
 
 
 class PermissionErrorLog:

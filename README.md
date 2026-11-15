@@ -1,4 +1,4 @@
-# Family Access Manager 1.0.0-beta.2
+# Family Access Manager 1.0.0-beta.3
 
 Benutzerrollen und Dashboardfreigaben für Home Assistant. Die Oberfläche verwendet vollständig das lokal eingebundene **HA UI Kit 1.6.0**.
 
@@ -6,7 +6,7 @@ Family Access ist eine reine Verwaltungsoberfläche für Administratoren und Eig
 
 ## Dashboardzugriff einrichten
 
-1. Unter **Rollen** eine Rolle anlegen und die gewünschten Dashboards auf **Freigegeben** setzen.
+1. Unter **Rollen** eine Rolle anlegen und die gewünschten Dashboards über die Schalter freigeben.
 2. Unter **Benutzer** das Konto aktivieren, die Rolle wählen und **Änderungen speichern**.
 3. Die Seitenleiste zeigt diesem Konto nur freigegebene Dashboards sowie die eigenen Konto-/internen Routen. Allgemeine Panels wie Verlauf, Kalender und Medien werden ausgeblendet; das feste Konto- und Benachrichtigungsmenü bleibt bestehen.
 4. Für direkte Dashboard-Konfigurationsanfragen unter **Einstellungen → Dashboard-Konfigurationen sperren** die Sperre einschalten und speichern.
@@ -15,6 +15,18 @@ Family Access ist eine reine Verwaltungsoberfläche für Administratoren und Eig
 Eine Rolle lässt sich vorbereiten, ohne das Konto zu aktivieren. Beim Ausschalten bleibt die Rolle gespeichert und die normale HA-Navigation wird wiederhergestellt. Administratoren und Eigentümer behalten Vollzugriff.
 
 Gerätefreigaben sind für diesen Ablauf nicht erforderlich und werden nicht mehr angeboten. Die Bedienung in freigegebenen Dashboards folgt den nativen HA-Rechten. Vorhandene Anzeigen-/Bedienen-/Bearbeiten-Zuordnungen erscheinen als freigegeben und bleiben bis zu einer Änderung gespeichert; es wird damit kein eigener schreibgeschützter HA-Modus oder Administratorzugriff vergeben.
+
+## Reihenfolge und Admin-Seitenleiste
+
+Unter **Rollen → Dashboards** die Reihenfolge mit den Pfeilen ändern. **Reihenfolge übernehmen** öffnet die Benutzerauswahl; die Konten der Rolle sind vorausgewählt. Es lassen sich auch andere persönliche Benutzer einschließlich Administratoren auswählen. Bei ungespeicherten Änderungen zeigt die Aktion **Speichern und übernehmen** ausdrücklich an, dass zunächst alle vorbereiteten Rollen-/Rechteänderungen gespeichert werden.
+
+Die Übernahme ändert nur die native HA-Seitenleistenreihenfolge der gewählten Konten. Freigaben, Aktivierungen, ausgeblendete Einträge, andere persönliche Einstellungen und Startseiten bleiben erhalten. Nicht freigegebene Dashboards bleiben unsichtbar. Andere Panels behalten ihre relative Reihenfolge. Neue Dashboards werden an die Rollenreihenfolge angehängt; entfernte Pfade ignoriert. Die Benutzer können ihre persönliche Reihenfolge anschließend weiterhin in HA ändern. Bei einzelnen Speicherfehlern nennt die Oberfläche die betroffenen Konten; Details stehen im Fehlerprotokoll.
+
+Unter **Benutzer** öffnet das Stiftsymbol beim jeweiligen Administrator dessen **sichtbare Dashboards**. Diese Auswahl gilt pro Admin und erteilt oder entzieht keine Rechte. Im selben Dialog lässt sich die **Startseite** wählen. Da HA die Startseite immer zeigt, muss sie sichtbar bleiben; alternativ ein anderes Dashboard oder **Eigenes Profil** wählen. Die Aktion **Seitenleiste speichern** speichert diese persönliche Auswahl sofort, unabhängig von vorbereiteten Rollenänderungen. Globale HA-Einstellungen für die Dashboard-Sichtbarkeit bleiben maßgeblich.
+
+HA übernimmt diese Einstellungen über seinen eigenen Benutzerspeicher und dessen Live-Abonnements in offene Browser. Ohne solche Abonnements hilft vollständiges Neuladen. Bestehende ausschließlich im Browser gespeicherte ältere Einstellungen werden durch die hier explizit gewählte Auswahl ersetzt.
+
+**Prüfen** war eine technische Diagnose für eigene Dashboardanfragen sowie HTTP und WebSocket. Sie liegt jetzt unter **Einstellungen → Diagnose**. Bei Rollen wählt nur noch ein Feld die Rolle; das Stiftsymbol öffnet **Rolle umbenennen**.
 
 ## Fehlerprotokoll
 
@@ -45,19 +57,19 @@ Die Quelle ist als benutzerdefiniertes Repository nutzbar; sie wird nicht automa
 
 ### Manuell
 
-Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.0.0-beta.2.zip`.
+Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.0.0-beta.3.zip`.
 
 ## Schutzumfang und Grenzen
 
 Diese Vorabversion verwaltet **Dashboardzugriff und Navigation**. Die optionale native Sperre schützt neue Lovelace-Konfigurationsanfragen; bereits geladene Inhalte lassen sich nicht zurückholen. Allgemeine HA-Geräte-/System-APIs, Suche, Historie, Kameras, Assist, Automationen und Drittintegrationen bleiben durch die nativen HA-Rechte bestimmt. Das Ausblenden einer Seitenleiste ist allein keine allgemeine Sicherheitsgrenze.
 
-Eine bisherige, nicht freigegebene Startseite kann als nicht verfügbar erscheinen; dann ein freigegebenes Dashboard öffnen. Die Integration verändert keine Startseitenpräferenzen, HA-Gruppen, Tokens oder Netzwerkeinstellungen. Beim Entfernen oder fehlgeschlagenen Laden entfällt auch ihre Filterung und zusätzliche Sperre.
+Eine bisherige, nicht freigegebene Startseite kann als nicht verfügbar erscheinen; dann ein freigegebenes Dashboard öffnen. Die Rollenfilterung verändert keine Startseitenpräferenzen, HA-Gruppen, Tokens oder Netzwerkeinstellungen. Nur die ausdrückliche Admin-Seitenleistenaktion speichert die dort gewählte Startseite. Beim Entfernen oder fehlgeschlagenen Laden entfällt auch ihre Filterung und zusätzliche Sperre.
 
 Die Oberfläche bietet keine Geräteverwaltung und keinen eigenen Dashboardeditor. Altfelder und bisherige interne Prüfendpunkte bleiben für die Abwärtskompatibilität erhalten. Ein Live-Test mit deiner produktiven HA-Instanz und deinem Nabu-Casa-Konto ist noch erforderlich. [Prüfablauf](docs/LOKAL_CLOUD_TEST.md) und [Prüfergebnisse](docs/TESTERGEBNISSE.md) beschreiben den nachgewiesenen Umfang.
 
 ## Versionen und Entwicklung
 
-[Semantische Versionierung](docs/VERSIONING.md): `MAJOR.MINOR.PATCH`, Vorabstände als `1.0.0-beta.1`, `1.0.0-beta.2` usw. Die bisherigen Tags bleiben erhalten.
+[Semantische Versionierung](docs/VERSIONING.md): `MAJOR.MINOR.PATCH`, Vorabstände als `1.0.0-beta.1`, `1.0.0-beta.3` usw. Die bisherigen Tags bleiben erhalten.
 
 Die Benutzeransicht enthält nur einen kurzen Hinweis; ausführliche Hinweise und Zugriffsschutz liegen unter dem Zahnrad **Einstellungen**.
 

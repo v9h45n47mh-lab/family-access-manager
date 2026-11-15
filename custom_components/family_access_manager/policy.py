@@ -37,7 +37,7 @@ def default_policy() -> dict:
         "device_control": False,
         "roles": {
             "family": {
-                "name": "Familie",
+                "name": "Familie", "dashboard_order": [],
                 "dashboards": {}, "entities": {}, "areas": {}, "labels": {},
             },
         },
@@ -66,10 +66,15 @@ def validate_policy(raw: object) -> dict:
     for role_id, role in roles.items():
         if not isinstance(role_id, str) or not ROLE_ID.fullmatch(role_id):
             raise InvalidPolicy("Ungültige Rollen-ID.")
-        if type(role) is not dict or set(role) != {"name", "dashboards", "entities", "areas", "labels"}:
+        if type(role) is not dict or set(role) != {"name", "dashboard_order", "dashboards", "entities", "areas", "labels"}:
             raise InvalidPolicy("Ungültige Rollenstruktur.")
         if not isinstance(role["name"], str) or not 1 <= len(role["name"].strip()) <= 80:
             raise InvalidPolicy("Bitte einen Rollennamen mit 1–80 Zeichen angeben.")
+        order = role["dashboard_order"]
+        if (type(order) is not list or len(order) > 3000
+                or not all(isinstance(path, str) and DASHBOARD_ID.fullmatch(path) for path in order)
+                or len(order) != len(set(order))):
+            raise InvalidPolicy("Ungültige Dashboardreihenfolge.")
         for section in ("dashboards", "entities", "areas", "labels"):
             grants = role[section]
             if type(grants) is not dict or len(grants) > 3000:
@@ -113,6 +118,11 @@ def migrate_policy(raw: object) -> dict:
     if type(raw) is dict and set(raw) == legacy_fields and type(raw["bindings"]) is dict:
         raw = deepcopy(raw)
         raw["enabled_users"] = list(raw["bindings"])
+    if type(raw) is dict and type(raw.get("roles")) is dict:
+        raw = deepcopy(raw)
+        for role in raw["roles"].values():
+            if type(role) is dict:
+                role.setdefault("dashboard_order", [])
     return validate_policy(raw)
 
 

@@ -16,6 +16,7 @@ from .gate import DashboardGate, principal
 from .policy import InvalidPolicy, Policy, Resource, default_policy, migrate_policy, validate_policy
 from .services import validate_service
 from .sidebar import SidebarFilter
+from .sidebar_preferences import admin_sidebar, apply_order, ordered_dashboards, save_admin_sidebar
 from .error_log import ERROR_LOG_LIMIT, PermissionErrorLog, request_target
 
 
@@ -105,7 +106,7 @@ class Runtime:
 
     async def dispatch(self, user, action, payload, *, source="internal"):
         try:
-            return await self._dispatch(user, action, payload)
+            return await self._dispatch(user, action, payload, source=source)
         except AccessDenied as err:
             target = request_target(action, payload)
             self.error_log.record(user, action, target, str(err), source=source)
@@ -127,12 +128,15 @@ class Runtime:
                                   source=source, kind="error")
             raise
 
-    async def _dispatch(self, user, action, payload):
+    async def _dispatch(self, user, action, payload, *, source="internal"):
         if not user.is_active:
             raise AccessDenied("Das Benutzerkonto ist nicht aktiv.")
         if type(payload) is not dict:
             raise ValueError("Ungültige Anfrage.")
         actor = principal(user)
+        if action in {"admin_sidebar", "save_admin_sidebar", "apply_dashboard_order"}:
+            self.require_admin(user)
+            return await self.sidebar_request(user, action, payload, source=source)
         if action == "admin_panel_status":
             self.require_admin(user)
             return await self._dispatch(user, "status", payload)
@@ -231,4 +235,60 @@ class Runtime:
                 raise ValueError("Dieses Dashboard ist nicht verfügbar.")
             return await dashboard.async_load(False)
         raise ValueError("Unbekannte Funktion.")
+
+    async def sidebar_request(self, actor, action, payload, *, source):
+        """An admin may edit navigation preferences, never grant HA privileges."""
+        users = {u.id: u for u in await self.hass.auth.async_get_users() if not u.system_generated}
+        catalog = self.dashboard_catalog()
+        if action in {"admin_sidebar", "save_admin_sidebar"}:
+            expected = {"user_id"} if action == "admin_sidebar" else {"user_id", "token", "visible_dashboards", "default_panel"}
+            if set(payload) != expected or not isinstance(payload.get("user_id"), str):
+                raise ValueError("Bitte einen Administrator auswählen.")
+            uid = payload["user_id"]
+            target = users.get(uid)
+            if target is None or not (target.is_admin or target.is_owner):
+                raise ValueError("Die Seitenleistenauswahl gilt nur für persönliche Administratorkonten.")
+            if action == "admin_sidebar":
+                return await admin_sidebar(self.hass, uid, catalog)
+            visible, default = payload["visible_dashboards"], payload["default_panel"]
+            known = {d["id"] for d in catalog}
+            if (type(visible) is not list or not all(isinstance(p, str) and p in known for p in visible)
+                    or len(visible) != len(set(visible)) or not isinstance(default, str)
+                    or not isinstance(payload["token"], str)):
+                raise ValueError("Ungültige Dashboardauswahl.")
+            async with self.lock:
+                current = await admin_sidebar(self.hass, uid, catalog)
+                if payload["token"] != current["token"]:
+                    raise Conflict("Die Seitenleiste wurde zwischenzeitlich geändert. Bitte erneut öffnen.")
+                if default not in known | {current["default_panel"], "profile"} or (default in known and default not in visible):
+                    raise ValueError("Die Startseite muss sichtbar bleiben. Bitte eine andere Startseite wählen.")
+                await save_admin_sidebar(self.hass, uid, visible, default, catalog)
+            self.audit(actor.id, action, uid, True)
+            return await admin_sidebar(self.hass, uid, catalog)
+        if (set(payload) != {"role_id", "user_ids", "revision"}
+                or not isinstance(payload["role_id"], str)
+                or type(payload["revision"]) is not int
+                or type(payload["user_ids"]) is not list
+                or not 1 <= len(payload["user_ids"]) <= 500
+                or not all(isinstance(uid, str) and uid in users for uid in payload["user_ids"])
+                or len(payload["user_ids"]) != len(set(payload["user_ids"]))):
+            raise ValueError("Bitte vorhandene persönliche Benutzer auswählen.")
+        async with self.lock:
+            if payload["revision"] != self.policy.config["revision"]:
+                raise Conflict("Die Rollen wurden zwischenzeitlich geändert. Bitte neu laden.")
+            role = self.policy.config["roles"].get(payload["role_id"])
+            if role is None:
+                raise ValueError("Diese Rolle existiert nicht.")
+            ordered = ordered_dashboards(role, catalog)
+            applied, failed = [], []
+            for uid in payload["user_ids"]:
+                try:
+                    await apply_order(self.hass, uid, ordered, catalog)
+                except Exception:
+                    failed.append(uid)
+                    self.error_log.record(actor, action, uid, "Die Dashboardreihenfolge konnte für dieses Konto nicht gespeichert werden.", source=source, kind="error")
+                else:
+                    applied.append(uid)
+                    self.audit(actor.id, action, uid, True)
+            return {"applied": applied, "failed": failed}
 

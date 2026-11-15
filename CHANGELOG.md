@@ -1,5 +1,14 @@
 # Änderungen
 
+## 1.0.0-beta.3 – 15.11.2026
+
+- Doppeltes Rollennamensfeld durch eine eigene Umbenennen-Aktion mit Dialog ersetzt.
+- Technischen Tab Prüfen nach Einstellungen → Diagnose verschoben.
+- Dashboardreihenfolge je Rolle und Übernahme auf ausgewählte persönliche Benutzer über den nativen HA-Benutzerspeicher.
+- Sichtbare Dashboards und Startseite je Administrator, ohne dessen Vollzugriff zu ändern.
+- Migration vorhandener Rollen, Erkennung veralteter Seitenleistenstände und präzise Rückmeldung bei einzelnen Übernahmefehlern.
+- Originalkomponenten von HA UI Kit 1.6.0 einschließlich Pfeilen, Schaltern, Auswahl- und Umbenennungsdialogen; keine lokalen CSS-Regeln.
+
 ## 1.0.0-beta.2 – 15.11.2026
 
 - Kompakte gemeinsame Benutzerzeile mit Name, Rolle und Aktivierung aus HA UI Kit 1.6.0.

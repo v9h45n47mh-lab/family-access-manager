@@ -182,6 +182,39 @@ async def main():
                     await ws.send_json({"id": 8, "type": "get_panels"})
                     assert "dashboard-family-allowed" not in (await ws.receive_json())["result"]
                     results["checks"]["native_sidebar_refresh_on_open_connection"] = True
+                    # Native user-store subscriptions update an existing browser session.
+                    from homeassistant.components.frontend.storage import async_user_store, UserStore
+                    catalog = runtime.dashboard_catalog()
+                    assert catalog
+                    await ws.send_json({"id":9,"type":"frontend/subscribe_user_data","key":"sidebar"})
+                    assert (await ws.receive_json())["type"] == "event"
+                    assert (await ws.receive_json())["success"]
+                    before_order = deepcopy(runtime.policy.config)
+                    async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action":"apply_dashboard_order","payload":{"role_id":"family","user_ids":[child.id],"revision":runtime.policy.config["revision"]}}) as response:
+                        assert response.status == 200, await response.text()
+                        assert (await response.json())["result"]["applied"] == [child.id]
+                    update = await ws.receive_json()
+                    assert update["event"]["value"]["panelOrder"] == [d["id"] for d in catalog]
+                    assert runtime.policy.config == before_order
+                    results["checks"]["native_sidebar_order_applies_live_without_grant_changes"] = True
+                    for action, payload in [("admin_sidebar",{"user_id":owner.id}), ("save_admin_sidebar",{}), ("apply_dashboard_order",{})]:
+                        async with session.post(base + "/api/family_access_manager/request", headers=headers, json={"action":action,"payload":payload}) as response:
+                            assert response.status == 403
+                    results["checks"]["sidebar_preferences_admin_only"] = True
+                    async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action":"admin_sidebar","payload":{"user_id":owner.id}}) as response:
+                        prefs = (await response.json())["result"]
+                    async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action":"save_admin_sidebar","payload":{"user_id":owner.id,"token":prefs["token"],"visible_dashboards":[],"default_panel":"profile"}}) as response:
+                        assert response.status == 200, await response.text()
+                    owner_store = await async_user_store(hass,owner.id)
+                    child_store = await async_user_store(hass,child.id)
+                    assert set(owner_store.data["sidebar"]["hiddenPanels"]) == {d["id"] for d in catalog}
+                    assert not child_store.data["sidebar"].get("hiddenPanels")
+                    results["checks"]["admin_dashboard_visibility_is_per_user"] = True
+                    reloaded = UserStore(hass,owner.id)
+                    await reloaded.async_load()
+                    assert reloaded.data["sidebar"] == owner_store.data["sidebar"]
+                    assert reloaded.data["default_panel"] == "profile"
+                    results["checks"]["native_sidebar_preferences_persist"] = True
             # Inspect the installed official adapter without importing unrelated
             # Alexa/camera dependencies. This is NOT a live relay test.
             cloud_source = (Path(homeassistant.__file__).parent / "components/cloud/client.py").read_text()

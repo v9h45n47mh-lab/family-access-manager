@@ -60,7 +60,7 @@ def grant(runtime, child):
     config = runtime.policy.config.copy()
     config["bindings"] = {child[0].id: ["family"]}
     config["enabled_users"] = [child[0].id]
-    config["roles"] = {"family": {"name": "Paul", "dashboards": {"dashboard-kids": "view"}, "entities": {"switch.probe": "view"}, "areas": {}, "labels": {}}}
+    config["roles"] = {"family": {"name": "Paul", "dashboard_order": [], "dashboards": {"dashboard-kids": "view"}, "entities": {"switch.probe": "view"}, "areas": {}, "labels": {}}}
     runtime.policy = Policy(config)
     return config
 
