@@ -161,7 +161,7 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.evaluate(()=>window.app.snapshot),null);
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(root,'test-results/validation.json'),JSON.stringify({ui:'1.6.0',variants:results,actions:['user_activation','user_assignment','controlled_switch','permission_save','search','escaping','native_dialog_escape','cancel_and_focus','http_ws_check','dashboard_read','admin_error_protocol','restricted_panel_denied'],consoleErrors:errors},null,2));
   console.log(JSON.stringify({variants:results.length,themes:2,widths:[1100,430,390,375,320],behavior:'passed'}));
-  if(process.env.CI)for(const name of ['users-1100-light.png','users-390-dark.png','roles-1100-dark.png','roles-390-light.png','admin-dialog-390-light.png','order-dialog-390-light.png','delete-dialog-390-light.png']){
+  if(process.env.CI)for(const name of ['users-1100-light.png','users-390-dark.png','roles-1100-dark.png','roles-390-light.png','admin-dialog-390-light.png','order-dialog-390-light.png','delete-dialog-390-light.png','settings-390-dark.png']){
     const encoded=fs.readFileSync(path.join(root,'test-results',name)).toString('base64'),size=16000,count=Math.ceil(encoded.length/size);
     console.log('FAM_VISUAL_META '+JSON.stringify({name,chunks:count,length:encoded.length}));
     for(let i=0;i<count;i++)console.log('FAM_VISUAL_DATA '+name+' '+i+' '+encoded.slice(i*size,(i+1)*size));

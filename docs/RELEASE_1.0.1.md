@@ -8,4 +8,6 @@ Family Access Manager **1.0.1** ist ein reguläres Release ohne Beta-Zusatz.
 
 Rollen, Dashboardfreigaben und Benutzeraktivierungen bleiben bestehen. Nach dem Update HA neu starten und den Browser vollständig neu laden. Für Paul Family Access aktivieren und die gewünschte Rolle zuweisen, falls das noch nicht geschehen ist.
 
+Geprüft: **120 HA-Tests, 29 aktuelle Core-Prüfungen und 80 Browservarianten**, Desktop/Mobil und hell/dunkel.
+
 [Prüfnachweis](https://github.com/v9h45n47mh-lab/family-access-manager/blob/v1.0.1/docs/TESTERGEBNISSE.md).
