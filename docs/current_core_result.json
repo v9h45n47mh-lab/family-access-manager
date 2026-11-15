@@ -12,7 +12,10 @@
     "native_dashboard_gate_on_existing_connection": true,
     "disabled_user_keeps_role_without_own_api_grants": true,
     "per_user_activation_on_existing_connection": true,
+    "native_sidebar_filtering_and_admin_isolation": true,
+    "native_sidebar_refresh_on_open_connection": true,
     "cloud_adapter_source_points_to_same_runner": true,
+    "unload_restores_native_panels_handler": true,
     "clean_unload": true,
     "policy_persists_across_reload": true
   },

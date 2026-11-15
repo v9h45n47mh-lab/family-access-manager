@@ -7,6 +7,8 @@ Die Seitenleiste wird für Benutzer mit aktiviertem Family Access jetzt nach ihr
 - Nach erfolgreichem Speichern lädt die native HA-Oberfläche ihre Panelliste über das übliche `panels_updated`-Ereignis neu. Der Filter verändert keine globale Panelkonfiguration und keine Benutzerpräferenzen.
 - Direkte Lovelace-Konfigurationsanfragen werden weiterhin durch die separate optionale Dashboard-Sperre geprüft. Das Ausblenden ersetzt keine allgemeine Geräte-/API-Zugriffskontrolle.
 
+Geprüft mit **67 HA-Tests, 17 aktuellen Core-Prüfungen und 40 Browservarianten**. Die native Seitenleistenquelle, Benutzertrennung und Aktualisierung offener Verbindungen wurden über echte HA-WebSocket-Endpunkte geprüft. Details: [Prüfergebnisse](https://github.com/v9h45n47mh-lab/family-access-manager/blob/v0.4.0/docs/TESTERGEBNISSE.md).
+
 Nach dem Update Home Assistant neu starten und den Testbrowser einmal vollständig neu laden. Anschließend ein freigegebenes Dashboard öffnen, beispielsweise „Maximilian“. Ist eine bisherige Startseite nicht freigegeben, wird sie nicht automatisch freigegeben oder als Benutzerpräferenz ersetzt.
 
 Installation über Marketplace/HACS mit eingeblendeten Vorabversionen oder `family_access_manager.zip`.
