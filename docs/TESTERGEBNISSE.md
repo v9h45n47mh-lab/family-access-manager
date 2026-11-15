@@ -1,10 +1,10 @@
-# Prüfungen – Family Access Manager 1.0.0-beta.3
+# Prüfungen – Family Access Manager 1.0.0
 
 Stand: 15. November 2026. Implementierungsprüfung von `602dfc63628262b840a8b70f3e7b0ebb257593d5`: [erfolgreiche CI](https://github.com/v9h45n47mh-lab/family-access-manager/actions/runs/43718759199). Der Release-Commit ergänzt Dokumentation und passende Suchfeldbeschriftungen und führt dieselben Prüfungen erneut aus.
 
 | Prüfung | Umgebung | Ergebnis |
 |---|---|---|
-| Rollen, Migration, Dashboardzugriff, Aktivierung, Fehlerprotokoll und Seitenleisteneinstellungen | HA 2026.10.4/Python 3.14 | 101 pytest-Tests bestanden |
+| Rollen, Migration, Dashboardzugriff, Aktivierung, Fehlerprotokoll und Seitenleisteneinstellungen | HA 2026.10.4/Python 3.14 | 105 pytest-Tests bestanden |
 | Native Benutzerspeicherung | Echte frontend UserStore-Instanzen | Reihenfolge und Admin-Sichtbarkeit dauerhaft gespeichert; andere Konten, Rechte und persönliche Felder erhalten |
 | Live-Aktualisierung | Echter frontend/subscribe_user_data-WebSocket | Bestehende authentifizierte Sitzung erhält die übernommene Reihenfolge |
 | Schutz der Seitenleistenverwaltung | Echte HTTP-/WebSocket-Anfragen | Normale Benutzer bei allen drei neuen Aktionen abgelehnt; Eigentümer/Administratoren zugelassen |
@@ -24,3 +24,7 @@ Die bisherigen 29 Unit-Tests und sieben Browsersuiten von [Kit 1.6.0](https://gi
 Die Browserdarstellung verwendet feste HA-Client-Daten. Native Speicherung, Benutzertrennung, Revisionsprüfung und WebSocket-Abonnements werden getrennt im echten Core geprüft. Family Access bleibt ein Admin-Panel; normale Benutzer erhalten auch beim direkten Aufruf keine Verwaltungsdaten. Reihenfolgeübernahmen ändern keine Rolle, Aktivierung, Freigabe, Startseite oder bestehende Ausblendung. Die gesonderte Adminauswahl speichert ausdrücklich Sichtbarkeit und gewählte Startseite.
 
 Globale HA-Dashboard-Sichtbarkeit bleibt maßgeblich. Die HA-Startseite muss sichtbar bleiben oder ausdrücklich gewechselt werden. Keine produktive HA-/Nabu-Casa-Instanz und keine physischen iPhones getestet. Die Core-Instanz verwendet eine simulierte Loopback-Netzwerkschnittstelle, echte Netzwerkgeräte gehören nicht zum Ergebnis.
+
+## Regulärer Updatekanal 1.0.0
+
+Zusätzliche Regressionstests prüfen nur gewählte Dashboardreihenfolgen, unveränderte Reihenfolgen nicht gewählter Dashboards, bereinigte alte Admin-/gelöschte Konten, erneutes Speichern und die weiterhin gesperrte neue Adminaktivierung. Für 1.0.0 werden außerdem Versionsangaben, HACS-Name und Veröffentlichung korrigiert. Die Gruppierung Nicht gewählt und die Übernahme der bereinigten Konfiguration werden im Browser mitgeprüft. Die Release-CI führt alle drei Prüfjobs auf dem konkreten Release-Commit erneut aus. Die Veröffentlichung muss ein nicht vorläufiges Release mit Tag v1.0.0 und denselben Paketprüfsummen wie der lokale Build liefern; releases/latest wird nach Veröffentlichung gesondert kontrolliert.

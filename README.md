@@ -1,4 +1,4 @@
-# Family Access Manager 1.0.0-beta.3
+# Family Access Manager 1.0.0
 
 Benutzerrollen und Dashboardfreigaben für Home Assistant. Die Oberfläche verwendet vollständig das lokal eingebundene **HA UI Kit 1.6.0**.
 
@@ -18,9 +18,9 @@ Gerätefreigaben sind für diesen Ablauf nicht erforderlich und werden nicht meh
 
 ## Reihenfolge und Admin-Seitenleiste
 
-Unter **Rollen → Dashboards** die Reihenfolge mit den Pfeilen ändern. **Reihenfolge übernehmen** öffnet die Benutzerauswahl; die Konten der Rolle sind vorausgewählt. Es lassen sich auch andere persönliche Benutzer einschließlich Administratoren auswählen. Bei ungespeicherten Änderungen zeigt die Aktion **Speichern und übernehmen** ausdrücklich an, dass zunächst alle vorbereiteten Rollen-/Rechteänderungen gespeichert werden.
+Unter **Rollen → Dashboards** nur die freigegebenen Dashboards mit den Pfeilen sortieren. Die übrigen Dashboards stehen im aufklappbaren Block **Nicht gewählt** darunter und haben keine Sortierpfeile. **Reihenfolge übernehmen** öffnet die Benutzerauswahl; die Konten der Rolle sind vorausgewählt. Es lassen sich auch andere persönliche Benutzer einschließlich Administratoren auswählen. Bei ungespeicherten Änderungen zeigt die Aktion **Speichern und übernehmen** ausdrücklich an, dass zunächst alle vorbereiteten Rollen-/Rechteänderungen gespeichert werden.
 
-Die Übernahme ändert nur die native HA-Seitenleistenreihenfolge der gewählten Konten. Freigaben, Aktivierungen, ausgeblendete Einträge, andere persönliche Einstellungen und Startseiten bleiben erhalten. Nicht freigegebene Dashboards bleiben unsichtbar. Andere Panels behalten ihre relative Reihenfolge. Neue Dashboards werden an die Rollenreihenfolge angehängt; entfernte Pfade ignoriert. Die Benutzer können ihre persönliche Reihenfolge anschließend weiterhin in HA ändern. Bei einzelnen Speicherfehlern nennt die Oberfläche die betroffenen Konten; Details stehen im Fehlerprotokoll.
+Die Übernahme ändert nur die native HA-Seitenleistenreihenfolge der gewählten Dashboards bei den gewählten Konten. Freigaben, Aktivierungen, ausgeblendete Einträge, andere persönliche Einstellungen und Startseiten bleiben erhalten. Nicht freigegebene Dashboards bleiben unsichtbar. Andere Panels behalten ihre relative Reihenfolge. Neu freigegebene Dashboards werden an die gewählte Reihenfolge angehängt; nicht gewählte und entfernte Pfade werden bei der Übernahme ignoriert. Ihre persönliche Reihenfolge bleibt unberührt. Die Benutzer können ihre persönliche Reihenfolge anschließend weiterhin in HA ändern. Bei einzelnen Speicherfehlern nennt die Oberfläche die betroffenen Konten; Details stehen im Fehlerprotokoll.
 
 Unter **Benutzer** öffnet das Stiftsymbol beim jeweiligen Administrator dessen **sichtbare Dashboards**. Diese Auswahl gilt pro Admin und erteilt oder entzieht keine Rechte. Im selben Dialog lässt sich die **Startseite** wählen. Da HA die Startseite immer zeigt, muss sie sichtbar bleiben; alternativ ein anderes Dashboard oder **Eigenes Profil** wählen. Die Aktion **Seitenleiste speichern** speichert diese persönliche Auswahl sofort, unabhängig von vorbereiteten Rollenänderungen. Globale HA-Einstellungen für die Dashboard-Sichtbarkeit bleiben maßgeblich.
 
@@ -51,17 +51,23 @@ Fehler vor der Anmeldung oder beim Laden einer anderen Integration gehören in d
 
 ### Marketplace / HACS
 
-Das Repository `https://github.com/v9h45n47mh-lab/family-access-manager` als benutzerdefiniertes Repository der Kategorie **Integration** hinzufügen. Vorabversionen gegebenenfalls einblenden, die gewünschte Version installieren und HA neu starten. Anschließend unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
+Das Repository `https://github.com/v9h45n47mh-lab/family-access-manager` als benutzerdefiniertes Repository der Kategorie **Integration** hinzufügen. Die reguläre Version **1.0.0** installieren und HA neu starten. Dafür müssen keine Vorabversionen eingeblendet werden. Anschließend unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
 
 Die Quelle ist als benutzerdefiniertes Repository nutzbar; sie wird nicht automatisch Teil des offiziellen Katalogs.
 
 ### Manuell
 
-Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.0.0-beta.3.zip`.
+Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.0.0.zip`.
+
+### Falls HACS noch einen Commit-Hash anzeigt
+
+In HACS beim **Family Access Manager** die Repositoryinformationen neu laden und die reguläre Version **1.0.0** installieren. Bis zu dieser Installation kann die bisher installierte Version weiterhin als Commit-Hash erscheinen. Danach HA neu starten und den Browser vollständig neu laden. Falls bisher ausdrücklich der Entwicklungszweig `main` gewählt war, beim erneuten Herunterladen **1.0.0** wählen.
+
+Der GitHub-Endpunkt `releases/latest` liefert jetzt die reguläre Version. Künftige reguläre Releases werden automatisch ohne Vorabversionsmarkierung und als neueste Version veröffentlicht; Beta-/RC-Versionen bleiben im Vorabkanal.
 
 ## Schutzumfang und Grenzen
 
-Diese Vorabversion verwaltet **Dashboardzugriff und Navigation**. Die optionale native Sperre schützt neue Lovelace-Konfigurationsanfragen; bereits geladene Inhalte lassen sich nicht zurückholen. Allgemeine HA-Geräte-/System-APIs, Suche, Historie, Kameras, Assist, Automationen und Drittintegrationen bleiben durch die nativen HA-Rechte bestimmt. Das Ausblenden einer Seitenleiste ist allein keine allgemeine Sicherheitsgrenze.
+Diese Integration verwaltet **Dashboardzugriff und Navigation**. Die optionale native Sperre schützt neue Lovelace-Konfigurationsanfragen; bereits geladene Inhalte lassen sich nicht zurückholen. Allgemeine HA-Geräte-/System-APIs, Suche, Historie, Kameras, Assist, Automationen und Drittintegrationen bleiben durch die nativen HA-Rechte bestimmt. Das Ausblenden einer Seitenleiste ist allein keine allgemeine Sicherheitsgrenze.
 
 Eine bisherige, nicht freigegebene Startseite kann als nicht verfügbar erscheinen; dann ein freigegebenes Dashboard öffnen. Die Rollenfilterung verändert keine Startseitenpräferenzen, HA-Gruppen, Tokens oder Netzwerkeinstellungen. Nur die ausdrückliche Admin-Seitenleistenaktion speichert die dort gewählte Startseite. Beim Entfernen oder fehlgeschlagenen Laden entfällt auch ihre Filterung und zusätzliche Sperre.
 
@@ -69,7 +75,7 @@ Die Oberfläche bietet keine Geräteverwaltung und keinen eigenen Dashboardedito
 
 ## Versionen und Entwicklung
 
-[Semantische Versionierung](docs/VERSIONING.md): `MAJOR.MINOR.PATCH`, Vorabstände als `1.0.0-beta.1`, `1.0.0-beta.3` usw. Die bisherigen Tags bleiben erhalten.
+[Semantische Versionierung](docs/VERSIONING.md): reguläre Releases als `1.0.0`, `1.0.1`, `1.1.0` usw. Nur gezielte Vorabtests erhalten einen Zusatz wie `1.1.0-beta.1`. Die bisherigen Tags bleiben erhalten.
 
 Die Benutzeransicht enthält nur einen kurzen Hinweis; ausführliche Hinweise und Zugriffsschutz liegen unter dem Zahnrad **Einstellungen**.
 

@@ -1,5 +1,15 @@
 # Änderungen
 
+## 1.0.0 – 15.11.2026
+
+- Nur gewählte Dashboards sortierbar; übrige Dashboards im aufklappbaren Block Nicht gewählt ohne Pfeile. Reihenfolge nicht gewählter Dashboards bleibt bei der Übernahme erhalten.
+- Speicherfehler durch unveränderte alte Admin-/gelöschte Benutzerzuordnungen behoben. Neue Versuche, Administratoren einzuschränken, bleiben gesperrt. Die Oberfläche übernimmt die bereinigte gespeicherte Konfiguration.
+
+- Den zuletzt geprüften Funktionsstand als reguläres GitHub-Release veröffentlicht, damit HACS bei ausgeblendeten Vorabversionen eine Versionsnummer statt eines Commit-Hashes anbietet.
+- Veröffentlichung unterscheidet automatisch reguläre Versionen und Versionen mit Vorabzusatz; reguläre Versionen werden explizit als neueste Version markiert.
+- Einheitliche Versionsangaben in Integration, Oberfläche und Paketen. HACS-Anzeigename ohne Prüfversionszusatz.
+- Rollen, Dashboardrechte, Benutzeraktivierungen und persönliche Seitenleisteneinstellungen unverändert.
+
 ## 1.0.0-beta.3 – 15.11.2026
 
 - Doppeltes Rollennamensfeld durch eine eigene Umbenennen-Aktion mit Dialog ersetzt.

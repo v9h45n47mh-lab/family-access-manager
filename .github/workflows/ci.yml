@@ -73,13 +73,17 @@ jobs:
         with:
           python-version: '3.14'
       - run: python scripts/build_release.py
-      - name: Publish tested prerelease
+      - name: Publish tested release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           version=$(python -c 'import json; print(json.load(open("custom_components/family_access_manager/manifest.json"))["version"])')
+          release_flags=(--prerelease --latest=false)
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            release_flags=(--latest)
+          fi
           if gh release view "v$version" > /dev/null 2>&1; then
             echo "Release already exists; leaving it unchanged."
           else
-            gh release create "v$version" dist/*.zip dist/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title "Family Access Manager $version" --notes-file "docs/RELEASE_$version.md"
+            gh release create "v$version" dist/*.zip dist/SHA256SUMS.txt --target "$GITHUB_SHA" "${release_flags[@]}" --title "Family Access Manager $version" --notes-file "docs/RELEASE_$version.md"
           fi

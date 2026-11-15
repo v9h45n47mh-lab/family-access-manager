@@ -186,6 +186,9 @@ async def main():
                     from homeassistant.components.frontend.storage import async_user_store, UserStore
                     catalog = runtime.dashboard_catalog()
                     assert catalog
+                    order_fixture = deepcopy(runtime.policy.config)
+                    order_fixture['roles']['family']['dashboards'] = {catalog[0]['id']:'view'}
+                    runtime.policy = Policy(order_fixture)
                     await ws.send_json({"id":9,"type":"frontend/subscribe_user_data","key":"sidebar"})
                     assert (await ws.receive_json())["type"] == "event"
                     assert (await ws.receive_json())["success"]
@@ -194,7 +197,7 @@ async def main():
                         assert response.status == 200, await response.text()
                         assert (await response.json())["result"]["applied"] == [child.id]
                     update = await ws.receive_json()
-                    assert update["event"]["value"]["panelOrder"] == [d["id"] for d in catalog]
+                    assert update["event"]["value"]["panelOrder"] == [catalog[0]["id"]]
                     assert runtime.policy.config == before_order
                     results["checks"]["native_sidebar_order_applies_live_without_grant_changes"] = True
                     for action, payload in [("admin_sidebar",{"user_id":owner.id}), ("save_admin_sidebar",{}), ("apply_dashboard_order",{})]:

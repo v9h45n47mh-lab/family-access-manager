@@ -47,6 +47,7 @@ async def apply(runtime, admin, users, **updates):
 async def test_order_uses_live_native_store_and_survives_reload(runtime, hass, child, grant, hass_admin_user):
     config = deepcopy(grant)
     config['roles']['family']['dashboard_order'] = ['dashboard-private', 'deleted', 'dashboard-kids']
+    config['roles']['family']['dashboards']['dashboard-private'] = 'view'
     runtime.policy = Policy(config)
     store = await storage.async_user_store(hass, child[0].id)
     original = {'panelOrder': ['history','dashboard-kids','media-browser'], 'hiddenPanels': ['history'], 'extra': 42}
@@ -134,7 +135,7 @@ async def test_invalid_targets_and_revisions_do_not_write(runtime, child, hass_a
         await runtime.dispatch(hass_admin_user, 'admin_sidebar', {'user_id':child[0].id})
 
 
-async def test_partial_order_failure_is_reported_and_logged_without_secrets(runtime, hass, child, hass_admin_user):
+async def test_partial_order_failure_is_reported_and_logged_without_secrets(runtime, hass, child, grant, hass_admin_user):
     other = await hass.auth.async_create_user('Other', group_ids=[GROUP_ID_USER])
     from custom_components.family_access_manager.sidebar_preferences import apply_order
     async def failing(hass, uid, *args):
@@ -160,7 +161,7 @@ async def test_failed_native_write_restores_memory_and_previous_preferences(runt
     assert store.data == original
 
 
-async def test_real_native_websocket_subscription_receives_applied_order(runtime, hass, child, hass_admin_user, hass_ws_client):
+async def test_real_native_websocket_subscription_receives_applied_order(runtime, hass, child, grant, hass_admin_user, hass_ws_client):
     await storage.async_setup_frontend_storage(hass)
     ws = await hass_ws_client(hass, access_token=child[1])
     await ws.send_json({'id':1,'type':'frontend/subscribe_user_data','key':'sidebar'})
@@ -168,4 +169,46 @@ async def test_real_native_websocket_subscription_receives_applied_order(runtime
     assert initial['type'] == 'event' and result['success']
     await apply(runtime, hass_admin_user, [child[0].id])
     event = await ws.receive_json()
-    assert event['event']['value']['panelOrder'] == ['dashboard-kids','dashboard-private']
+    assert event['event']['value']['panelOrder'] == ['dashboard-kids']
+
+
+async def test_only_chosen_dashboards_change_their_native_order(runtime, hass, child, grant, hass_admin_user):
+    store = await storage.async_user_store(hass, child[0].id)
+    await store.async_set_item('sidebar', {'panelOrder':['history','dashboard-private','dashboard-kids','media-browser']})
+    role = runtime.policy.config['roles']['family']
+    role['dashboard_order'] = ['dashboard-private','dashboard-kids']
+    result = await apply(runtime,hass_admin_user,[child[0].id])
+    assert result['applied'] == [child[0].id]
+    assert store.data['sidebar']['panelOrder'] == ['history','dashboard-private','dashboard-kids','media-browser']
+
+
+async def test_unchanged_legacy_admin_and_deleted_bindings_do_not_block_save_and_order(runtime, hass, child, grant, hass_admin_user):
+    stale = deepcopy(grant)
+    stale['bindings'][hass_admin_user.id] = ['family']
+    stale['bindings']['deleted-user'] = []
+    stale['enabled_users'] += [hass_admin_user.id, 'deleted-user']
+    runtime.policy = Policy(stale)
+    candidate = deepcopy(stale)
+    candidate['roles']['family']['dashboard_order'] = ['dashboard-kids']
+    saved = await runtime.dispatch(hass_admin_user, 'save_policy', candidate)
+    assert saved['policy']['bindings'] == {child[0].id:['family']}
+    assert saved['policy']['enabled_users'] == [child[0].id]
+    assert candidate['bindings'] == stale['bindings'], 'Do not mutate caller drafts'
+    assert (await apply(runtime,hass_admin_user,[child[0].id]))['applied'] == [child[0].id]
+    # A second save of the returned canonical policy works too.
+    await runtime.dispatch(hass_admin_user, 'save_policy', saved['policy'])
+
+
+async def test_new_changes_to_legacy_admin_bindings_still_fail(runtime, grant, hass_admin_user):
+    stale = deepcopy(grant)
+    stale['bindings'][hass_admin_user.id] = ['family']
+    runtime.policy = Policy(stale)
+    candidate = deepcopy(stale)
+    candidate['enabled_users'].append(hass_admin_user.id)
+    with pytest.raises(InvalidPolicy):
+        await runtime.dispatch(hass_admin_user,'save_policy',candidate)
+
+
+async def test_empty_role_order_cannot_be_applied(runtime, child, hass_admin_user):
+    with pytest.raises(ValueError, match='keine Dashboards'):
+        await apply(runtime,hass_admin_user,[child[0].id])

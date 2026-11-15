@@ -27,9 +27,9 @@ def fingerprint(store):
 
 
 def ordered_dashboards(role, catalog):
-    known = {d["id"] for d in catalog}
+    known = {d["id"] for d in catalog if role["dashboards"].get(d["id"], "none") in {"view", "control", "edit"}}
     saved = [path for path in role["dashboard_order"] if path in known]
-    return saved + [d["id"] for d in catalog if d["id"] not in saved]
+    return saved + [d["id"] for d in catalog if d["id"] in known and d["id"] not in saved]
 
 
 def merge_order(old, ordered, dashboard_ids):
@@ -94,7 +94,7 @@ async def apply_order(hass, user_id, ordered, catalog):
     store = await async_user_store(hass, user_id)
     before = deepcopy(store.data.get("sidebar"))
     sidebar = sidebar_data(store)
-    sidebar["panelOrder"] = merge_order(sidebar.get("panelOrder", []), ordered, {d["id"] for d in catalog})
+    sidebar["panelOrder"] = merge_order(sidebar.get("panelOrder", []), ordered, set(ordered))
     try:
         await store.async_set_item("sidebar", sidebar)
     except Exception:

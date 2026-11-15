@@ -3,6 +3,7 @@
 from pathlib import Path
 import hashlib
 import json
+import re
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,6 +41,14 @@ def archive(path, paths):
 
 def main():
     version = json.loads((ROOT / "custom_components/family_access_manager/manifest.json").read_text())["version"]
+    if not re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?", version):
+        raise ValueError("Release version must use MAJOR.MINOR.PATCH with an optional prerelease suffix")
+    const = (ROOT / "custom_components/family_access_manager/const.py").read_text()
+    panel = (ROOT / "custom_components/family_access_manager/frontend/panel.js").read_text()
+    if f'VERSION = "{version}"' not in const or f"frontend:'{version}'" not in panel:
+        raise ValueError("Manifest, backend and frontend versions must match")
+    if not (ROOT / f"docs/RELEASE_{version}.md").is_file():
+        raise ValueError("Release notes are missing")
     all_files = files()
     checksums = "\n".join(
         f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(ROOT).as_posix()}"

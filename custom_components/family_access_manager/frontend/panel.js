@@ -24,7 +24,9 @@ class FamilyAccessPanel extends HTMLElement {
         const role=this.policy.roles[this.roleId],path=event.data.path;
         if(event.checked)role.dashboards[path]='view';else delete role.dashboards[path];
         event.element.classList.toggle('on',event.checked);event.element.setAttribute('aria-checked',String(event.checked));
-        this.markDirty();return;
+        this.markDirty();
+        this.renderDashboardRows({expandUnchosen:!event.checked});
+        [...this.shadowRoot.querySelectorAll('[data-action="dashboard-grant"]')].find(el=>el.dataset.path===path)?.focus();return;
       }
       if (event.action === 'user-activation') {
         const uid=event.data.user;
@@ -102,7 +104,7 @@ class FamilyAccessPanel extends HTMLElement {
         this.policy.roles[this.roleId].name=name;this.closeModal();this.markDirty();this.render();return;
       }
       if(action === "move-dashboard") {
-        const list=this.orderedDashboards().map(d=>d.id),index=list.indexOf(control.dataset.path),next=index+Number(control.dataset.direction);
+        const list=this.selectedDashboards().map(d=>d.id),index=list.indexOf(control.dataset.path),next=index+Number(control.dataset.direction);
         if(this.query||index<0||next<0||next>=list.length)return;
         [list[index],list[next]]=[list[next],list[index]];this.policy.roles[this.roleId].dashboard_order=list;this.markDirty();this.renderDashboardRows();
         [...this.shadowRoot.querySelectorAll('[data-action="move-dashboard"]')].find(el=>el.dataset.path===control.dataset.path&&el.dataset.direction===control.dataset.direction&&!el.disabled)?.focus();return;
@@ -114,7 +116,7 @@ class FamilyAccessPanel extends HTMLElement {
       if(action === "confirm-order") {
         const ids=this.checkedValues('order-users');if(!ids.length)throw Error('Bitte mindestens einen Benutzer auswählen.');
         control.disabled=true;
-        if(this.dirty){const saved=await this.api('save_policy',this.policy);this.policy.revision=saved.revision;this.dirty=false;}
+        if(this.dirty){const saved=await this.api('save_policy',this.policy);this.policy=saved.policy?structuredClone(saved.policy):{...this.policy,revision:saved.revision};this.dirty=false;}
         const result=await this.api('apply_dashboard_order',{role_id:this.roleId,user_ids:ids,revision:this.policy.revision});
         this.closeModal();this.notice=`Reihenfolge für ${result.applied.length} Benutzer übernommen.`;
         this.error=result.failed.length?'Nicht übernommen für: '+result.failed.map(id=>this.snapshot.users.find(u=>u.id===id)?.name||id).join(', ')+'. Details im Fehlerprotokoll.':'';
@@ -197,22 +199,32 @@ class FamilyAccessPanel extends HTMLElement {
     const saved=(role?.dashboard_order||[]).filter(id=>byId.has(id));
     return [...saved.map(id=>byId.get(id)),...this.snapshot.dashboards.filter(d=>!saved.includes(d.id))];
   }
+  selectedDashboards(){return this.orderedDashboards().filter(d=>['view','control','edit'].includes(this.policy.roles[this.roleId].dashboards[d.id]));}
   roleContent() {
     const role=this.policy.roles[this.roleId],add=button({label:'Rolle',icon:'add',action:'add-role',variant:'primary'});
     if(!role)return section({id:'roles',title:'Rollen',trailing:add,content:emptyState('Lege eine Rolle an, um Freigaben zu verwalten.')});
     const fields=kitSelect({id:'role-select',label:'Rolle',value:this.roleId,options:options(Object.entries(this.policy.roles).map(([id,r])=>[id,r.name]))})+`<div class="toolbar">${iconButton({icon:'edit',label:'Rolle umbenennen',action:'rename-role'})}${iconButton({icon:'trash',label:'Rolle entfernen',action:'delete-role',danger:true})}</div>`;
     return section({id:'roles',title:'Rollen',trailing:add,content:fields})
-      +section({id:'dashboards',title:'Dashboards',content:feedback('Freigaben über die Schalter wählen, Reihenfolge mit den Pfeilen ändern. Die Reihenfolge lässt sich auf ausgewählte Benutzer übernehmen.')+`<div class="toolbar">${button({label:'Reihenfolge übernehmen',action:'apply-order',icon:'copy'})}</div>`+field({id:'search',label:'Dashboards suchen',type:'search',placeholder:'Name oder Pfad',value:this.query})+`<div id="dashboard-rows">${this.dashboardRows()}</div>`});
+      +section({id:'dashboards',title:'Dashboards',content:feedback('Gewählte Dashboards mit den Pfeilen sortieren. Weitere Dashboards stehen unter „Nicht gewählt“. Die Reihenfolge lässt sich auf ausgewählte Benutzer übernehmen.')+`<div class="toolbar">${button({label:'Reihenfolge übernehmen',action:'apply-order',icon:'copy',disabled:!this.selectedDashboards().length})}</div>`+field({id:'search',label:'Dashboards suchen',type:'search',placeholder:'Name oder Pfad',value:this.query})+`<div id="dashboard-rows">${this.dashboardRows()}</div>`});
   }
   dashboardRows() {
     const role=this.policy.roles[this.roleId];if(!role)return '';
-    const q=this.query.toLowerCase(),all=this.orderedDashboards(),list=all.filter(x=>(x.name+' '+x.id).toLowerCase().includes(q));
-    return (q?feedback('Zum Sortieren die Suche leeren.'):'')+list.map(x=>{
+    const q=this.query.toLowerCase(),all=this.selectedDashboards(),ids=new Set(all.map(d=>d.id));
+    const matches=x=>(x.name+' '+x.id).toLowerCase().includes(q);
+    const chosen=all.filter(matches),unchosen=this.snapshot.dashboards.filter(d=>!ids.has(d.id)&&matches(d)).sort((a,b)=>a.name.localeCompare(b.name,'de'));
+    const renderRow=(x,selected)=>{
       const i=all.findIndex(d=>d.id===x.id);
-      return row({title:x.name,description:x.id,trailing:iconButton({icon:'up',label:x.name+' nach oben',action:'move-dashboard',disabled:Boolean(q)||i===0,data:{path:x.id,direction:-1}})+iconButton({icon:'down',label:x.name+' nach unten',action:'move-dashboard',disabled:Boolean(q)||i===all.length-1,data:{path:x.id,direction:1}})+toggle({label:'Dashboard '+x.name+' freigeben',action:'dashboard-grant',checked:['view','control','edit'].includes(role.dashboards[x.id]),iconOnly:true,data:{path:x.id}})});
-    }).join('')+(!list.length?emptyState('Keine Treffer.'):'');
+      const arrows=selected?iconButton({icon:'up',label:x.name+' nach oben',action:'move-dashboard',disabled:Boolean(q)||i===0,data:{path:x.id,direction:-1}})+iconButton({icon:'down',label:x.name+' nach unten',action:'move-dashboard',disabled:Boolean(q)||i===all.length-1,data:{path:x.id,direction:1}}):'';
+      return row({title:x.name,description:x.id,trailing:arrows+toggle({label:'Dashboard '+x.name+' freigeben',action:'dashboard-grant',checked:selected,iconOnly:true,data:{path:x.id}})});
+    };
+    return (q?feedback('Zum Sortieren die Suche leeren.'):'')+chosen.map(x=>renderRow(x,true)).join('')
+      +(!chosen.length?emptyState(q?'Keine gewählten Dashboards gefunden.':'Noch keine Dashboards gewählt.'):'')
+      +(unchosen.length?section({id:'unchosen-dashboards',title:'Nicht gewählt',expanded:Boolean(q)||Boolean(this.unchosenExpanded??true),content:unchosen.map(x=>renderRow(x,false)).join('')}):'');
   }
-  renderDashboardRows() { const box=this.shadowRoot.getElementById('dashboard-rows');if(box)box.innerHTML=this.dashboardRows(); }
+  renderDashboardRows({expandUnchosen=false}={}) {
+    const box=this.shadowRoot.getElementById('dashboard-rows');
+    if(box){const old=this.shadowRoot.getElementById('unchosen-dashboards-content');if(old&&!this.query)this.unchosenExpanded=!old.hidden;if(expandUnchosen)this.unchosenExpanded=true;box.innerHTML=this.dashboardRows();}
+  }
   testContent() {
     return section({id:'checks',title:'Zugriff prüfen',content:feedback('Diese Prüfung führt echte Dashboard-Anfragen mit dem angemeldeten HA-Konto aus.')
       +`<div class="toolbar">${button({label:'HTTP und WebSocket prüfen',action:'api-check',variant:'primary'})}</div>`
@@ -230,7 +242,7 @@ class FamilyAccessPanel extends HTMLElement {
       +section({id:'diagnosis',title:'Diagnose',expanded:Boolean(this.output),content:this.testContent()})
       +section({id:'scope',title:'Hinweise',expanded:false,content:facts.map(([title,description])=>row({title,description})).join('')
       +helpContent({content:'<p>Family Access verwaltet Dashboardzugriff und Navigation. Freigegebene Dashboards benötigen keine zusätzlichen Gerätefreigaben. Vorhandene HA-Benutzerrechte, Gruppen, Tokens und Netzwerkeinstellungen bleiben bestehen.</p><p>Die zusätzliche Dashboard-Sperre schützt neue Konfigurationsanfragen. Bereits geladene Inhalte lassen sich nicht zurückholen. Profil und feste Konto-/Benachrichtigungselemente bleiben erreichbar. Beim Entfernen der Integration entfällt die Filterung.</p>'})
-      +versionInfo({frontend:'1.0.0-beta.3',backend:this.status.version,ui:UI_VERSION})})
+      +versionInfo({frontend:'1.0.0',backend:this.status.version,ui:UI_VERSION})})
       +(this.snapshot?section({id:'audit',title:'Letzte Zugriffsprüfungen',expanded:false,content:this.snapshot.events.slice(0,30).map(ev=>row({title:ev.operation,description:ev.target+' · '+new Date(ev.time).toLocaleString('de-DE'),trailing:statusBadge({label:ev.allowed?'Erlaubt':'Abgelehnt',state:ev.allowed?'success':'error',icon:ev.allowed?'success':'failure'})})).join('')||emptyState('Noch keine Prüfungen. Nach einem Test neu laden.')}):'');
   }
   render() {

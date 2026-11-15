@@ -180,8 +180,18 @@ class Runtime:
             self.require_admin(user)
             candidate = validate_policy(payload)
             users = {u.id: u for u in await self.hass.auth.async_get_users()}
-            if any(uid not in users or users[uid].system_generated or users[uid].is_admin or users[uid].is_owner for uid in candidate["bindings"]):
-                raise InvalidPolicy("Nur vorhandene persönliche Konten ohne Administratorrechte können eingeschränkt werden.")
+            stale = [uid for uid in candidate["bindings"]
+                     if uid not in users or users[uid].system_generated or users[uid].is_admin or users[uid].is_owner]
+            for uid in stale:
+                # Earlier versions could persist bindings for administrators or
+                # accounts which were later deleted/promoted. Drop only unchanged
+                # legacy entries; a new attempt to restrict an admin still fails.
+                old = self.policy.config
+                if (uid not in old["bindings"] or candidate["bindings"][uid] != old["bindings"][uid]
+                        or (uid in candidate["enabled_users"]) != (uid in old["enabled_users"])):
+                    raise InvalidPolicy("Nur vorhandene persönliche Konten ohne Administratorrechte können eingeschränkt werden.")
+                del candidate["bindings"][uid]
+            candidate["enabled_users"] = [uid for uid in candidate["enabled_users"] if uid not in stale]
             if candidate["native_dashboard_gate"] and not self.gate.available:
                 raise InvalidPolicy("Die Dashboard-Prüfung ist mit dieser HA-Version nicht verfügbar.")
             if candidate["enabled_users"] and not self.sidebar.available:
@@ -196,7 +206,7 @@ class Runtime:
             # HA's panel collection refetches get_panels for each connection.
             self.hass.bus.async_fire(EVENT_PANELS_UPDATED)
             self.audit(user.id, "save_policy", "configuration", True)
-            return {"revision": self.policy.config["revision"]}
+            return {"revision": self.policy.config["revision"], "policy": deepcopy(self.policy.config)}
         if action == "read_entity":
             if set(payload) != {"entity_id"} or not isinstance(payload["entity_id"], str):
                 raise ValueError("Bitte eine Entität angeben.")
@@ -280,6 +290,8 @@ class Runtime:
             if role is None:
                 raise ValueError("Diese Rolle existiert nicht.")
             ordered = ordered_dashboards(role, catalog)
+            if not ordered:
+                raise ValueError("Für diese Rolle sind keine Dashboards gewählt.")
             applied, failed = [], []
             for uid in payload["user_ids"]:
                 try:
