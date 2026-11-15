@@ -108,7 +108,7 @@ class Runtime:
         self.audit(user.id, f"entity/{level}", entity_id, bool(allowed))
         if not allowed:
             if not self.policy.privileged(actor) and not self.policy.managed(actor):
-                reason = "Family Access ist für dieses Konto ausgeschaltet."
+                reason = "Family Administration ist für dieses Konto ausgeschaltet."
             elif not self.policy.entity(actor, self.resource(entity_id), level):
                 reason = "Die Rolle enthält keine ausreichende Freigabe für diese Aktion."
             else:
@@ -203,18 +203,17 @@ class Runtime:
             self.require_admin(user)
             candidate = validate_policy(payload)
             users = {u.id: u for u in await self.hass.auth.async_get_users()}
-            stale = [uid for uid in candidate["bindings"]
+            assigned_users = set(candidate['bindings']) | set(candidate['app_bindings'])
+            stale = [uid for uid in assigned_users
                      if uid not in users or users[uid].system_generated or users[uid].is_admin or users[uid].is_owner]
             for uid in stale:
-                # Earlier versions could persist bindings for administrators or
-                # accounts which were later deleted/promoted. Drop only unchanged
-                # legacy entries; a new attempt to restrict an admin still fails.
                 old = self.policy.config
-                if (uid not in old["bindings"] or candidate["bindings"][uid] != old["bindings"][uid]
-                        or (uid in candidate["enabled_users"]) != (uid in old["enabled_users"])):
-                    raise InvalidPolicy("Nur vorhandene persönliche Konten ohne Administratorrechte können eingeschränkt werden.")
-                del candidate["bindings"][uid]
-            candidate["enabled_users"] = [uid for uid in candidate["enabled_users"] if uid not in stale]
+                if (any(candidate[key].get(uid) != old[key].get(uid) for key in ('bindings', 'app_bindings'))
+                        or (uid in candidate['enabled_users']) != (uid in old['enabled_users'])):
+                    raise InvalidPolicy('Nur vorhandenen persönlichen Konten ohne HA-Administratorrechte können Darstellungen und App-Rollen zugewiesen werden.')
+                candidate['bindings'].pop(uid, None)
+                candidate['app_bindings'].pop(uid, None)
+            candidate['enabled_users'] = [uid for uid in candidate['enabled_users'] if uid not in stale]
             if candidate["native_dashboard_gate"] and not self.gate.available:
                 raise InvalidPolicy("Die Dashboard-Prüfung ist mit dieser HA-Version nicht verfügbar.")
             if candidate["enabled_users"] and not self.sidebar.available:
@@ -349,8 +348,8 @@ class Runtime:
             for user in await self.hass.auth.async_get_users():
                 if user.system_generated or not user.is_active or user.is_admin or user.is_owner:
                     continue
-                assigned = candidate['bindings'].get(user.id, [])
-                if any(application in candidate['roles'][rid]['applications'] for rid in assigned):
+                assigned = candidate['app_bindings'].get(user.id, [])
+                if any(application in candidate['app_roles'][rid]['applications'] for rid in assigned):
                     continue
                 raw = legacy(user)
                 grants = {key: True for key in keys if raw.get(key, False) is True}
@@ -358,13 +357,12 @@ class Runtime:
                     continue
                 digest = hashlib.sha256(json.dumps(grants,sort_keys=True).encode()).hexdigest()[:10]
                 rid = 'import_'+application+'_'+digest
-                if rid not in candidate['roles']:
+                if rid not in candidate['app_roles']:
                     management = any(grants.get(key) for key in ('manage','settings','manage_catalog','delete_others','edit_others','confirm_any','alarms_others'))
                     label = 'Verwaltung' if management else 'Benutzer'
-                    candidate['roles'][rid] = {'name':APPLICATIONS[application]['name']+' · '+label+' (übernommen)',
-                        'dashboard_order':[], 'applications':{application:grants},
-                        'dashboards':{},'entities':{},'areas':{},'labels':{}}
-                candidate['bindings'].setdefault(user.id,[]).append(rid)
+                    candidate['app_roles'][rid] = {'name':APPLICATIONS[application]['name']+' · '+label+' (übernommen)',
+                        'applications':{application:grants}}
+                candidate['app_bindings'].setdefault(user.id,[]).append(rid)
             candidate['imported_applications'].append(application)
             candidate['revision'] += 1
             next_policy = Policy(candidate)

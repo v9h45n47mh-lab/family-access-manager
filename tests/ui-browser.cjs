@@ -10,7 +10,9 @@ snapshot.applications=[{"id": "light_manager", "name": "Light Manager", "permiss
 snapshot.dashboards.push({id:'dashboard-long-name',name:'LangeDashboardbezeichnungOhneLeerzeichenDieAufDemHandyUmgebrochenWerdenMuss'},{id:'dashboard-unsafe',name:'<img src=x onerror=alert(1)>'});
 snapshot.error_log=[{time:'2026-11-15T10:00:00Z',user_id:'paul',user_name:'Paul',operation:'read_dashboard',target:'dashboard-parents',reason:'Die Rolle enthält keine Freigabe für dieses Dashboard.',source:'websocket',kind:'denied'}];
 snapshot.error_log.push({...snapshot.error_log[0],user_name:'<img src=x onerror=alert(1)>',reason:'<img src=x onerror=alert(1)> Lange Diagnose für einen sicheren Umbruch auf Mobilgeräten'});
-const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.2.1',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
+policy.app_roles={admin:{name:'Admin',applications:{}},user:{name:'Benutzer',applications:{}},unused:{name:'Unbenutzte Rolle',applications:{}}};policy.app_bindings={paul:['user'],test:['user']};
+policy.roles.paul_display={name:'Paul',dashboard_order:[],applications:{},dashboards:{'dashboard-paul':'view'},entities:{},areas:{},labels:{}};policy.bindings.paul=['paul_display'];
+const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.3.0',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
 window.fixture={snapshot,status,saves:[],calls:[],state:'off',vacationListeners:new Set(),vacationSaves:[]};
 window.fixture.externalVacation=enabled=>{snapshot.vacation={...snapshot.vacation,enabled,revision:snapshot.vacation.revision+1};for(const listener of window.fixture.vacationListeners)listener({});};
 const hass={user:{id:'manuel'},connection:{async subscribeEvents(cb,type){if(type!=='family_access_vacation_updated')throw Error(type);window.fixture.vacationListeners.add(cb);return()=>window.fixture.vacationListeners.delete(cb);}},callWS:async msg=>{window.fixture.calls.push(msg.action);if(msg.action==='admin_panel_status'){if(!status.is_admin)throw Object.assign(new Error('Nur Administratoren'),{code:'unauthorized'});return structuredClone(status);}if(msg.action==='status')return structuredClone(status);if(msg.action==='admin_snapshot'){if(!status.is_admin)throw Error('Nicht freigegeben');return structuredClone(snapshot);}if(msg.action==='vacation_status')return structuredClone(snapshot.vacation);if(msg.action==='set_vacation'){window.fixture.vacationSaves.push(msg.payload);window.fixture.externalVacation(msg.payload.enabled);return structuredClone(snapshot.vacation);}if(msg.action==='admin_sidebar')return {user_id:msg.payload.user_id,token:'fixture-token',visible_dashboards:snapshot.dashboards.map(d=>d.id),default_panel:'dashboard-paul'};if(msg.action==='save_admin_sidebar'){window.fixture.adminSave=structuredClone(msg.payload);return msg.payload;}if(msg.action==='apply_dashboard_order'){window.fixture.orderApply=structuredClone(msg.payload);return {applied:msg.payload.user_ids,failed:[]};}if(msg.action==='save_policy'){if(!status.is_admin)throw Error('Nicht freigegeben');snapshot.policy=structuredClone(msg.payload);snapshot.policy.revision++;window.fixture.saves.push(structuredClone(msg.payload));for(const u of snapshot.users.filter(u=>u.admin)){delete snapshot.policy.bindings[u.id];snapshot.policy.enabled_users=snapshot.policy.enabled_users.filter(id=>id!==u.id);}return {revision:snapshot.policy.revision,policy:structuredClone(snapshot.policy)};}if(msg.action==='read_entity')return {state:window.fixture.state};if(msg.action==='call_service'){if(!status.is_admin)throw Error('Nicht freigegeben');window.fixture.state=window.fixture.state==='off'?'on':'off';return {executed:true};}if(msg.action==='admin_error_log'){if(!status.is_admin)throw Error('Nicht freigegeben');return {events:structuredClone(snapshot.error_log),limit:200};}if(msg.action==='read_dashboard'){if(!status.is_admin)throw Error('Nicht freigegeben');return {views:[]};}throw Error('Unknown action');},callApi:async()=>({result:structuredClone(status)})};
@@ -29,7 +31,7 @@ const server=http.createServer((req,res)=>{
  try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
   const app=page.locator('family-access-panel');await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).waitFor();
-  const pages=[['users','Benutzer'],['dashboards','Dashboards'],['roles','Rollenverwaltung'],['errors','Fehler'],['settings','Einstellungen'],...(await page.evaluate(()=>window.fixture.snapshot.applications)).map(x=>['app-'+x.id,x.name])];
+  const pages=[['users','Benutzer'],['dashboards','Dashboards'],['roles','Rollenverwaltung'],['errors','Fehler'],['settings','Einstellungen'],['vacation','Urlaubsmodus'],...(await page.evaluate(()=>window.fixture.snapshot.applications)).map(x=>['app-'+x.id,x.name])];
   for(const width of [1100,430,390,375,320])for(const theme of ['light','dark']){
    await page.setViewportSize({width,height:1000});await page.evaluate(dark=>document.body.classList.toggle('dark',dark),theme==='dark');
    for(const [id,label] of pages){
@@ -65,10 +67,10 @@ const server=http.createServer((req,res)=>{
   }
   await app.locator('.card-top').getByRole('button',{name:'Essensplaner',exact:true}).click();
   await app.getByRole('switch',{name:'Einträge anderer Benutzer löschen',exact:true}).click();
-  assert.equal(await page.evaluate(()=>window.app.policy.roles.family.applications.essensplaner.delete_others),true);
+  assert.equal(await page.evaluate(()=>window.app.policy.app_roles.user.applications.essensplaner.delete_others),true);
   assert.equal(await app.getByRole('switch',{name:'Einträge anderer Benutzer löschen',exact:true}).evaluate(el=>el===el.getRootNode().activeElement),true,'Permission toggle retains focus');
   await app.getByRole('switch',{name:'Essensplan ansehen',exact:true}).click();
-  assert.equal(await page.evaluate(()=>window.app.policy.roles.family.applications.essensplaner.delete_others),false);
+  assert.equal(await page.evaluate(()=>window.app.policy.app_roles.user.applications.essensplaner.delete_others),false);
   await page.setViewportSize({width:390,height:1000});await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).click();
   const paulSwitch=app.getByRole('switch',{name:'Dashboardzugriff für Paul',exact:true});
   const maxSwitch=app.getByRole('switch',{name:'Dashboardzugriff für Maximilian',exact:true});
@@ -76,16 +78,29 @@ const server=http.createServer((req,res)=>{
   assert.equal(await maxSwitch.getAttribute('aria-checked'),'false');
   assert.equal(await app.getByRole('switch',{name:'Dashboardzugriff für Manuel',exact:true}).count(),0);
   await app.locator('[data-action="edit-user-roles"][data-user="max"]').click();
-  await app.locator('#user-roles-dialog input[value="family"]').check();
+  await app.getByRole('combobox',{name:'Darstellung',exact:true}).selectOption('family');
+  await app.locator('#user-roles-dialog input[value="user"]').check();
+  for(const width of [1100,430,390,375,320])for(const theme of ['light','dark']){
+    await page.setViewportSize({width,height:1000});await page.evaluate(dark=>document.body.classList.toggle('dark',dark),theme==='dark');
+    const assignment=app.getByRole('dialog',{name:'Zuordnung für Maximilian',exact:true});
+    assert.equal(await assignment.evaluate(el=>el.scrollWidth>el.clientWidth),false,'Assignment dialog fits '+[width,theme]);
+    if(width===1100||width===390)await assignment.screenshot({path:path.join(root,'test-results','assignment-'+width+'-'+theme+'.png')});
+    results.push({width,theme,page:'assignment-dialog',matched:1});
+  }
   await app.locator('[data-action="confirm-user-roles"]').click();
-  assert.equal(await maxSwitch.getAttribute('aria-checked'),'false','Role preparation must not enable Family Access');
+  assert.equal(await maxSwitch.getAttribute('aria-checked'),'false','Role preparation must not enable dashboard restrictions');
+  assert.deepEqual(await page.evaluate(()=>window.app.policy.app_bindings.max),['user']);
+  assert.deepEqual(await page.evaluate(()=>window.app.policy.app_bindings.paul),['user']);
+  assert.deepEqual(await page.evaluate(()=>window.app.policy.bindings.paul),['paul_display']);
   await maxSwitch.click();await paulSwitch.click();
   assert.equal(await maxSwitch.getAttribute('aria-checked'),'true');
   assert.equal(await paulSwitch.getAttribute('aria-checked'),'false');
   await app.locator('[data-action="edit-user-roles"][data-user="paul"]').click();
-  await app.locator('#user-roles-dialog input[value="family"]').uncheck();
+  await app.getByRole('combobox',{name:'Darstellung',exact:true}).selectOption('!none');
+  await app.locator('#user-roles-dialog input[value="user"]').uncheck();
   await app.locator('[data-action="confirm-user-roles"]').click();
   await app.locator('.card-top').getByRole('button',{name:'Einstellungen',exact:true}).click();
+  await app.locator('.card-top').getByRole('button',{name:'Urlaubsmodus',exact:true}).click();
   const rightsDraft=await page.evaluate(()=>JSON.stringify(window.app.policy));
   await app.getByRole('switch',{name:'Urlaubsmodus für alle Anwendungen',exact:true}).click();
   await app.getByRole('status').filter({hasText:'Urlaubsmodus eingeschaltet'}).waitFor();
@@ -94,6 +109,7 @@ const server=http.createServer((req,res)=>{
   await page.evaluate(()=>window.fixture.externalVacation(false));
   await page.waitForFunction(()=>window.app.snapshot.vacation.enabled===false);
   assert.equal(await app.getByRole('switch',{name:'Urlaubsmodus für alle Anwendungen',exact:true}).getAttribute('aria-checked'),'false');
+  await app.locator('.card-top').getByRole('button',{name:'Einstellungen',exact:true}).click();
   await app.getByRole('switch',{name:'Dashboard-Konfigurationen sperren',exact:true}).click();
   assert.equal(await app.getByRole('switch',{name:'Dashboard-Konfigurationen sperren',exact:true}).getAttribute('aria-checked'),'true');
   await app.getByRole('button',{name:'Änderungen speichern',exact:true}).click();
@@ -107,6 +123,7 @@ const server=http.createServer((req,res)=>{
   await maxSwitch.click();
   assert.equal(await maxSwitch.evaluate(el=>el===el.getRootNode().activeElement),true,'Toggling retains keyboard focus');
   await app.locator('.card-top').getByRole('button',{name:'Dashboards',exact:true}).click();assert.equal(await app.locator('img').count(),0);
+  await app.getByRole('button',{name:'Nicht gewählt',exact:true}).click();
   await app.getByRole('switch',{name:'Dashboard Eltern freigeben',exact:true}).click();
   await app.getByRole('button',{name:'Neu laden',exact:true}).click();
   const modal=app.getByRole('dialog',{name:'Änderungen verwerfen?',exact:true});await modal.waitFor();
@@ -123,7 +140,7 @@ const server=http.createServer((req,res)=>{
   await app.getByRole('button',{name:'Aktualisieren',exact:true}).click();
   assert((await app.locator('#permission-errors-content').textContent()).includes('Keine')||(await app.locator('#permission-errors-content').textContent()).includes('keine Freigabe'));
   assert.equal(await app.locator('img').count(),0);
-  assert.equal(await page.evaluate(()=>window.app.policy.roles.family.name),'Vorbereitete Rolle');
+  assert.equal(await page.evaluate(()=>window.app.policy.app_roles.user.name),'Vorbereitete Rolle');
   assert.equal(await page.evaluate(()=>window.app.dirty),true,'Refreshing diagnostics preserves unsaved policy edits');
   // Shared dialogs and controls at every requested width and both themes.
   for(const width of [1100,430,390,375,320])for(const theme of ['light','dark']){
@@ -133,7 +150,7 @@ const server=http.createServer((req,res)=>{
     for(const [kind,title] of [['rename','Rolle umbenennen'],['order','Reihenfolge übernehmen'],['admin','Dashboards für Manuel'],['delete','Rolle löschen?']]){
       if(kind==='order'){await app.locator('.card-top').getByRole('button',{name:'Dashboards',exact:true}).click();await app.getByRole('button',{name:'Reihenfolge übernehmen',exact:true}).click();}
       if(kind==='admin'){await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).click();await app.getByRole('button',{name:'Dashboards für Manuel',exact:true}).click();}
-      if(kind==='delete'){await app.locator('.card-top').getByRole('button',{name:'Rollenverwaltung',exact:true}).click();await app.getByRole('combobox',{name:'Rolle',exact:true}).selectOption('unused');await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();}
+      if(kind==='delete'){await app.locator('.card-top').getByRole('button',{name:'Rollenverwaltung',exact:true}).click();await app.getByRole('combobox',{name:'App-Rolle',exact:true}).selectOption('unused');await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();}
       const modal=app.getByRole('dialog',{name:title,exact:true});await modal.waitFor();
       const overflow=await modal.evaluate(el=>[el,...el.querySelectorAll('.modal-body,.modal-head,footer,.fui-selection-list,.cover-option')].filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>n.className));
       assert.deepEqual(overflow,[],'Dialog overflow '+[kind,width,theme]);
@@ -141,7 +158,7 @@ const server=http.createServer((req,res)=>{
       assert.equal(style.fontSize,'14px');assert.equal(style.padding,'0px');
       if(width===390&&theme==='light')await modal.screenshot({path:path.join(root,'test-results',kind+'-dialog-390-light.png')});
       await page.keyboard.press('Escape');assert.equal(await modal.isVisible(),false);
-      if(kind==='delete'){assert.equal(await page.evaluate(()=>window.app.policy.roles.unused.name),'Unbenutzte Rolle','Escape does not delete');await app.getByRole('combobox',{name:'Rolle',exact:true}).selectOption('family');}
+      if(kind==='delete'){assert.equal(await page.evaluate(()=>window.app.policy.app_roles.unused.name),'Unbenutzte Rolle','Escape does not delete');await app.getByRole('combobox',{name:'App-Rolle',exact:true}).selectOption('user');}
       results.push({width,theme,page:kind+'-dialog',matched:3});
     }
   }
@@ -172,17 +189,17 @@ const server=http.createServer((req,res)=>{
   await app.getByRole('status').filter({hasText:'Admin-Seitenleiste gespeichert'}).waitFor();
   await app.locator('.card-top').getByRole('button',{name:'Einstellungen',exact:true}).click();
   assert.equal(await app.locator('#versions-content').isVisible(),true);
-  assert((await app.locator('#versions-content').textContent()).includes('Oberfläche 1.2.1'));
-  assert((await app.locator('#versions-content').textContent()).includes('Integration 1.2.1'));
+  assert((await app.locator('#versions-content').textContent()).includes('Oberfläche 1.3.0'));
+  assert((await app.locator('#versions-content').textContent()).includes('Integration 1.3.0'));
   assert((await app.locator('#versions-content').textContent()).includes('UI 1.6.0'));
   await app.locator('.card-top').getByRole('button',{name:'Rollenverwaltung',exact:true}).click();
-  await app.getByRole('combobox',{name:'Rolle',exact:true}).selectOption('unused');
+  await app.getByRole('combobox',{name:'App-Rolle',exact:true}).selectOption('unused');
   await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();
   await app.getByRole('dialog',{name:'Rolle löschen?',exact:true}).getByRole('button',{name:'Abbrechen',exact:true}).click();
-  assert.equal(await page.evaluate(()=>Boolean(window.app.policy.roles.unused)),true);
+  assert.equal(await page.evaluate(()=>Boolean(window.app.policy.app_roles.unused)),true);
   await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();
   await app.getByRole('dialog',{name:'Rolle löschen?',exact:true}).getByRole('button',{name:'Rolle löschen',exact:true}).click();
-  assert.equal(await page.evaluate(()=>Boolean(window.app.policy.roles.unused)),false);
+  assert.equal(await page.evaluate(()=>Boolean(window.app.policy.app_roles.unused)),false);
   assert.equal(await page.evaluate(()=>Boolean(window.app.policy.roles.family)),true);
   assert.equal(await page.evaluate(()=>window.fixture.adminSave.user_id),'manuel');
   assert.equal(await page.evaluate(()=>window.fixture.adminSave.visible_dashboards.includes('dashboard-paul')),false);

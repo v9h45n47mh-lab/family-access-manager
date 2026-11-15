@@ -1,4 +1,4 @@
-"""Family Access Manager: dashboard access and user navigation."""
+"""Family Administration: dashboard access and user navigation."""
 
 from pathlib import Path
 
@@ -14,6 +14,8 @@ from .vacation import CLIENTS as VACATION_CLIENTS, EVENT as VACATION_EVENT, regi
 
 
 async def async_setup_entry(hass, entry):
+    if entry.title in {"Family Access", "Family Access Manager"}:
+        hass.config_entries.async_update_entry(entry, title="Family Administration")
     runtime = Runtime(hass)
     await runtime.load()
     hass.data[DOMAIN] = runtime
@@ -42,7 +44,7 @@ async def async_setup_entry(hass, entry):
             raise RuntimeError("Die Dashboardauswahl im Profil kann mit dieser HA-Version nicht gefiltert werden.")
         await panel_custom.async_register_panel(
             hass, frontend_url_path=PANEL_PATH,
-            webcomponent_name="family-access-panel", sidebar_title="Family Access",
+            webcomponent_name="family-access-panel", sidebar_title="Family Administration",
             sidebar_icon="mdi:shield-account-outline",
             module_url=f"/family_access_manager_frontend/panel.js?v={VERSION}",
             embed_iframe=False, require_admin=True,

@@ -1,4 +1,4 @@
-name: Validate Family Access Manager
+name: Validate Family Administration
 
 on:
   push:
@@ -29,13 +29,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: v9h45n47mh-lab/light-manager
-          ref: 076c6893ccf8f2c14dc2f58369c3b01dd69135d0
+          ref: 602d8833f9a16f22d1c769f7639a3b2aef6fa85e
           path: .test-deps/light-manager
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: v9h45n47mh-lab/shutter-manager
-          ref: cec20718f8c67d3b868c1ee0458a1ac24abaef2d
+          ref: e92c9eb5a13c8617743edbefb1220b4ecd76a790
           path: .test-deps/shutter-manager
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -116,5 +116,5 @@ jobs:
           if gh release view "v$version" > /dev/null 2>&1; then
             echo "Release already exists; leaving it unchanged."
           else
-            gh release create "v$version" dist/*.zip dist/SHA256SUMS.txt --target "$GITHUB_SHA" "${release_flags[@]}" --title "Family Access Manager $version" --notes-file "docs/RELEASE_$version.md"
+            gh release create "v$version" dist/*.zip dist/SHA256SUMS.txt --target "$GITHUB_SHA" "${release_flags[@]}" --title "Family Administration $version" --notes-file "docs/RELEASE_$version.md"
           fi

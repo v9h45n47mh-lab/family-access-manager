@@ -2,12 +2,12 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set up Family Access Manager",
-        "description": "Family Access manages roles, dashboard access and per-user navigation. Administrators retain full access. Existing Home Assistant permissions remain in place. Enable the optional dashboard configuration gate in Settings. Device and system permissions are managed by Home Assistant."
+        "title": "Set up Family Administration",
+        "description": "Family Administration manages roles, dashboard access and per-user navigation. Administrators retain full access. Existing Home Assistant permissions remain in place. Enable the optional dashboard configuration gate in Settings. Device and system permissions are managed by Home Assistant."
       }
     },
     "abort": {
-      "already_configured": "Family Access Manager is already configured."
+      "already_configured": "Family Administration is already configured."
     }
   }
 }

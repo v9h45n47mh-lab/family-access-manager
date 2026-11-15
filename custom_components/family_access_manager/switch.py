@@ -10,7 +10,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class ProbeSwitch(SwitchEntity):
-    _attr_name = "Family Access Testschalter"
+    _attr_name = "Family Administration Testschalter"
     _attr_icon = "mdi:shield-check-outline"
     _attr_should_poll = False
     _attr_is_on = False

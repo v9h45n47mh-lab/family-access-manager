@@ -15,6 +15,7 @@ from custom_components.family_access_manager.runtime import AccessDenied
 
 def test_existing_policy_migrates_without_changing_dashboard_access():
     c=default_policy()
+    del c['app_roles']; del c['app_bindings']
     del c['imported_applications']
     del c['roles']['family']['applications']
     c['roles']['family']['dashboards']={'dashboard-paul':'view'}
@@ -29,13 +30,14 @@ def test_existing_policy_migrates_without_changing_dashboard_access():
 
 @pytest.mark.parametrize('grants',[{'essensplaner':{'delete_others':'true'}},{'unknown':{}},{'essensplaner':{'unknown':True}},{'essensplaner':True}])
 def test_application_grants_are_strict(grants):
-    c=default_policy();c['roles']['family']['applications']=grants
+    c=default_policy();c['app_roles']['user']['applications']=grants
     with pytest.raises(InvalidPolicy):validate_policy(c)
 
 
 async def test_role_caps_apply_without_enabling_dashboard_filter(runtime,child,grant,hass_admin_user):
     c=deepcopy(grant);c['enabled_users']=[]
-    c['roles']['family']['applications']={'essensplaner':{'view':True,'delete_others':True}}
+    c['app_roles']['user']['applications']={'essensplaner':{'view':True,'delete_others':True}}
+    c['app_bindings'][child[0].id]=['user']
     runtime.policy=Policy(c)
     assert allows(runtime.hass,child[0],'essensplaner','delete_others')
     assert not allows(runtime.hass,child[0],'essensplaner','manage_catalog',True)
@@ -60,7 +62,8 @@ async def test_legacy_app_rights_import_once_and_keep_dashboard_bindings(runtime
 
 
 async def test_explicit_role_denial_is_not_replaced_by_legacy_import(runtime,hass,child,grant):
-    c=deepcopy(grant);c['roles']['family']['applications']={'essensplaner':{}}
+    c=deepcopy(grant);c['app_roles']['user']['applications']={'essensplaner':{}}
+    c['app_bindings'][child[0].id]=['user']
     runtime.policy=Policy(c)
     await register(hass,'essensplaner',APPLICATIONS['essensplaner']['permissions'],lambda u:{'view':True,'delete_others':True})
     assert not allows(hass,child[0],'essensplaner','delete_others',True)
@@ -88,7 +91,7 @@ async def test_role_revocation_rechecks_existing_app_subscription(runtime,hass,c
     event=await ws.receive_json();assert event['event']['permissions']['plan'] is True
     assert (await ws.receive_json())['success']
     candidate=deepcopy(runtime.policy.config)
-    candidate['bindings'][child[0].id]=[]
+    candidate['app_bindings'][child[0].id]=[]
     await runtime.dispatch(hass_admin_user,'save_policy',candidate)
     event=await ws.receive_json();assert event['event']['permissions']['plan'] is False
     assert not allows(hass,child[0],'essensplaner','plan',True)
@@ -114,9 +117,9 @@ async def test_own_permissions_cannot_be_requested_for_another_user(runtime,hass
 
 async def test_multiple_roles_add_grants_and_ha_admin_identity_is_not_modified(runtime,hass,child,grant):
     c=deepcopy(grant)
-    c['roles']['family']['applications']={'essensplaner':{'view':True}}
-    c['roles']['editor']=deepcopy(c['roles']['family']);c['roles']['editor']['applications']={'essensplaner':{'delete_others':True}}
-    c['bindings'][child[0].id].append('editor');runtime.policy=Policy(c)
+    c['app_roles']['user']['applications']={'essensplaner':{'view':True}}
+    c['app_roles']['editor']={'name':'Editor','applications':{'essensplaner':{'delete_others':True}}}
+    c['app_bindings'][child[0].id]=['user','editor'];runtime.policy=Policy(c)
     assert permissions(hass,child[0],'essensplaner')['delete_others'] is True
     assert child[0].is_admin is False and child[0].is_owner is False
 
@@ -127,7 +130,7 @@ async def test_every_application_uses_real_authenticated_role_checks(runtime,has
     await register(hass,application,keys,lambda u:{key:True for key in keys})
     for key in keys:assert allows(hass,child[0],application,key)
     candidate=deepcopy(runtime.policy.config)
-    candidate['bindings'][child[0].id]=[]
+    candidate['app_bindings'][child[0].id]=[]
     await runtime.dispatch(hass_admin_user,'save_policy',candidate)
     for key in keys:assert not allows(hass,child[0],application,key,True)
     assert not child[0].is_admin
