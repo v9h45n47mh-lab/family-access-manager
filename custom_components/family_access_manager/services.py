@@ -15,7 +15,7 @@ def validate_service(payload: dict) -> tuple[str, str, list[str], dict]:
         raise ValueError("Bitte Domain, Aktion, Entitäten und Parameter angeben.")
     domain, service, targets, data = (payload[k] for k in ("domain", "service", "entity_ids", "data"))
     if not isinstance(domain, str) or not isinstance(service, str) or service not in SERVICES.get(domain, {}):
-        raise ValueError("Diese Aktion wird von Family Access nicht unterstützt.")
+        raise ValueError("Diese Aktion wird von Family Administration nicht unterstützt.")
     if type(targets) is not list or not 1 <= len(targets) <= 20 or not all(isinstance(t, str) and t.startswith(domain + ".") for t in targets):
         raise ValueError("Bitte 1–20 Entitäten derselben Domain auswählen.")
     if len(set(targets)) != len(targets):

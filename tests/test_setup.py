@@ -11,10 +11,12 @@ from custom_components.family_access_manager.policy import Policy
 
 
 async def test_entry_setup_probe_control_and_unload(hass, enable_custom_integrations, child):
-    entry = MockConfigEntry(domain=DOMAIN, data={}, unique_id=DOMAIN)
+    entry = MockConfigEntry(domain=DOMAIN, data={}, unique_id=DOMAIN, title="Family Access Manager")
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
+    assert entry.title == "Family Administration"
+    assert hass.data[frontend.DATA_PANELS][PANEL_PATH].sidebar_title == "Family Administration"
     runtime = hass.data[DOMAIN]
     assert runtime.gate.available
     assert runtime.sidebar.available

@@ -22,7 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 async def execute(hass, user, action, payload, *, source="internal"):
     runtime = hass.data.get(DOMAIN)
     if runtime is None:
-        return None, ("unavailable", "Family Access Manager ist nicht geladen.", 503)
+        return None, ("unavailable", "Family Administration ist nicht geladen.", 503)
     try:
         return await runtime.dispatch(user, action, payload, source=source), None
     except AccessDenied as err:
@@ -34,7 +34,7 @@ async def execute(hass, user, action, payload, *, source="internal"):
     except HomeAssistantError:
         return None, ("ha_error", "Home Assistant konnte die Anfrage nicht ausführen.", 400)
     except Exception:
-        _LOGGER.exception("Family Access Manager operation failed")
+        _LOGGER.exception("Family Administration operation failed")
         return None, ("internal_error", "Die Anfrage konnte nicht ausgeführt werden.", 500)
 
 

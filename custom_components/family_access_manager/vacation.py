@@ -139,7 +139,7 @@ def register_service(hass):
     async def set_vacation(call):
         runtime = hass.data.get('family_access_manager')
         if runtime is None:
-            raise ServiceValidationError('Family Access ist nicht geladen.')
+            raise ServiceValidationError('Family Administration ist nicht geladen.')
         if call.context.user_id:
             user = await hass.auth.async_get_user(call.context.user_id)
             if not user:

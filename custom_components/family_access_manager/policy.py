@@ -3,6 +3,7 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
 import json
+import hashlib
 import re
 
 from .applications import APPLICATIONS
@@ -32,7 +33,7 @@ class Resource:
     label_ids: frozenset[str] = field(default_factory=frozenset)
 
 
-def default_policy() -> dict:
+def _legacy_default_policy() -> dict:
     return {
         "revision": 0,
         "native_dashboard_gate": False,
@@ -49,7 +50,7 @@ def default_policy() -> dict:
     }
 
 
-def validate_policy(raw: object) -> dict:
+def _validate_legacy_policy(raw: object) -> dict:
     """Validate strictly before persistence; never coerce truthy strings."""
     if type(raw) is not dict:
         raise InvalidPolicy("Die Rechtekonfiguration muss ein Objekt sein.")
@@ -122,7 +123,7 @@ def validate_policy(raw: object) -> dict:
     return deepcopy(raw)
 
 
-def migrate_policy(raw: object) -> dict:
+def _migrate_legacy_policy(raw: object) -> dict:
     """Keep existing managed users enabled when loading the pre-0.3 format.
 
     Only storage loading uses this migration. API writes require the new,
@@ -142,7 +143,108 @@ def migrate_policy(raw: object) -> dict:
             if type(role) is dict:
                 role.setdefault("dashboard_order", [])
                 role.setdefault("applications", {})
-    return validate_policy(raw)
+    return _validate_legacy_policy(raw)
+
+
+USER_PERMISSIONS = {
+    'light_manager': {'view'},
+    'rollladenplaner': {'view', 'control'},
+    'essensplaner': {'view', 'plan'},
+    'hausarbeiten_manager': {'view'},
+    'gartenarbeit_manager': {'view'},
+    'spuelmaschine_verlauf': {'view', 'confirm_own'},
+    'music_manager': {'view', 'play', 'select_speaker', 'alarm_songs'},
+    'wecker_manager': {'view', 'use_own'},
+}
+
+
+def default_app_roles():
+    return {
+        'admin': {'name': 'Admin', 'applications': {
+            app: {key: True for key in descriptor['permissions']}
+            for app, descriptor in APPLICATIONS.items()}},
+        'user': {'name': 'Benutzer', 'applications': {
+            app: {key: key in USER_PERMISSIONS[app] for key in descriptor['permissions']}
+            for app, descriptor in APPLICATIONS.items()}},
+    }
+
+
+def default_policy():
+    return {**_legacy_default_policy(), 'app_roles': default_app_roles(), 'app_bindings': {}}
+
+
+def validate_policy(raw):
+    """New API writes must explicitly separate presentation and application roles."""
+    if type(raw) is not dict or not {'app_roles', 'app_bindings'} <= raw.keys():
+        raise InvalidPolicy('Darstellungen und App-Rollen müssen getrennt angegeben werden. Bitte neu laden.')
+    checked = _validate_legacy_policy({k: v for k, v in raw.items() if k not in ('app_roles', 'app_bindings')})
+    if any(role['applications'] for role in checked['roles'].values()):
+        raise InvalidPolicy('Darstellungen dürfen keine App-Rechte enthalten.')
+    roles, bindings = raw['app_roles'], raw['app_bindings']
+    if type(roles) is not dict or len(roles) > 700:
+        raise InvalidPolicy('Zu viele oder ungültige App-Rollen.')
+    for rid, role in roles.items():
+        if not isinstance(rid, str) or not ROLE_ID.fullmatch(rid):
+            raise InvalidPolicy('Ungültige App-Rollen-ID.')
+        if type(role) is not dict or set(role) != {'name', 'applications'}:
+            raise InvalidPolicy('App-Rollen dürfen nur Name und Anwendungsrechte enthalten.')
+        # Reuse the same strict permission catalogue and name validation.
+        probe = _legacy_default_policy()
+        probe['roles'] = {rid: {**probe['roles']['family'], **deepcopy(role)}}
+        _validate_legacy_policy(probe)
+    if type(bindings) is not dict or len(bindings) > 500:
+        raise InvalidPolicy('Ungültige App-Rollenzuordnung.')
+    for uid, assigned in bindings.items():
+        if (not isinstance(uid, str) or not 1 <= len(uid) <= 160
+            or type(assigned) is not list or len(assigned) > 20
+            or any(not isinstance(rid, str) or rid not in roles for rid in assigned)
+            or len(assigned) != len(set(assigned))):
+            raise InvalidPolicy('Eine App-Rollenzuordnung ist ungültig.')
+    if len(json.dumps(raw).encode()) > 250_000:
+        raise InvalidPolicy('Die Rechtekonfiguration ist zu groß.')
+    return {**checked, 'app_roles': deepcopy(roles), 'app_bindings': deepcopy(bindings)}
+
+
+def migrate_policy(raw):
+    """Split stored mixed roles once; preserve effective rights and explicit denial."""
+    if type(raw) is dict and ('app_roles' in raw or 'app_bindings' in raw):
+        base = _migrate_legacy_policy({k: v for k, v in raw.items() if k not in ('app_roles', 'app_bindings')})
+        return validate_policy({**base, **{k: v for k, v in raw.items() if k in ('app_roles', 'app_bindings')}})
+    legacy = _migrate_legacy_policy(raw)
+    result = {**deepcopy(legacy), 'app_roles': default_app_roles(), 'app_bindings': {}}
+    def normalized(apps):
+        return {app: {key: bool(grants.get(key, False)) for key in APPLICATIONS[app]['permissions']}
+                for app, grants in apps.items()}
+    def key(apps):
+        return json.dumps(normalized(apps), sort_keys=True)
+    indexed = {key(role['applications']): rid for rid, role in result['app_roles'].items()}
+    def retain(apps):
+        signature = key(apps)
+        if signature in indexed:
+            return indexed[signature]
+        rid = 'legacy_' + hashlib.sha256(signature.encode()).hexdigest()[:20]
+        result['app_roles'][rid] = {'name': 'Übernommene Rechte ' + str(len(indexed) - 1), 'applications': normalized(apps)}
+        indexed[signature] = rid
+        return rid
+    # Keep staged but unassigned application grants available for later use.
+    for role in legacy['roles'].values():
+        if role['applications']:
+            retain(role['applications'])
+    for uid, assigned in legacy['bindings'].items():
+        apps = {}
+        for rid in assigned:
+            for app, grants in legacy['roles'][rid]['applications'].items():
+                combined = apps.setdefault(app, {})
+                for permission, granted in grants.items():
+                    combined[permission] = combined.get(permission, False) or granted
+        if apps:
+            result['app_bindings'][uid] = [retain(apps)]
+    # Automatically imported app-only roles are no dashboard presentations.
+    app_only = {rid for rid, role in legacy['roles'].items() if role['applications']
+                and not any(role[part] for part in ('dashboards', 'entities', 'areas', 'labels'))}
+    result['roles'] = {rid: {**role, 'applications': {}} for rid, role in result['roles'].items() if rid not in app_only}
+    result['bindings'] = {uid: [rid for rid in assigned if rid not in app_only] for uid, assigned in result['bindings'].items()}
+    return validate_policy(result)
 
 
 class Policy:
@@ -191,6 +293,6 @@ class Policy:
             return {}
         if self.privileged(user):
             return {key: True for key in descriptor['permissions']}
-        roles = [self.config['roles'][rid] for rid in self.config['bindings'].get(user.id, [])]
+        roles = [self.config['app_roles'][rid] for rid in self.config['app_bindings'].get(user.id, [])]
         return {key: any(role['applications'].get(application, {}).get(key, False) for role in roles)
                 for key in descriptor['permissions']}

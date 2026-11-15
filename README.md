@@ -1,121 +1,79 @@
-# Family Access Manager 1.2.1
+# Family Administration 1.3.0
 
-## Zentraler Urlaubsmodus · 1.2.1
+Zentrale Verwaltung für Dashboard-Darstellungen, App-Rollen und Urlaubsmodus in Home Assistant. Die Oberfläche verwendet ausschließlich die mitgelieferten Originalkomponenten und Styles aus **HA UI Kit 1.6.0**.
 
-Der Urlaubsmodus wird ausschließlich unter **Family Access → Einstellungen → Urlaubsmodus** bedient. Die eigenen Urlaubsmodus-Bereiche und Schalter entfallen aus Light Manager, Shutter Manager und Hausarbeiten. Die Option „Im Urlaub pausieren“ je Programm bleibt erhalten; Programme ohne diese Option laufen weiter. Hausarbeiten pausieren ohne Änderung ihres Wiederholungsrhythmus und laufen beim Ausschalten ab heute weiter.
+## Darstellung und App-Rolle getrennt zuweisen
 
-Beim ersten Start wird ein bisher aktiver Urlaubsmodus einmalig zentral als aktiv übernommen. Vergangene Urlaubstage aus Hausarbeiten bleiben erhalten. Eine bewusste zentrale Änderung hat Vorrang vor später startenden Anwendungen. Bei vorübergehend fehlendem Family Access bleibt der zuletzt bestätigte Zustand erhalten.
+| Benutzer | Darstellung | App-Rolle |
+| --- | --- | --- |
+| Maximilian | Maximilian | Benutzer |
+| Paul | Paul | Benutzer |
 
-**Update:** zuerst Family Access Manager 1.2.1, danach Light Manager 1.5.0, Shutter Manager 1.9.0 und Hausarbeiten 0.5.0 installieren. Anschließend Home Assistant neu starten und Browser/App vollständig neu laden. Der zentrale Schalter speichert sofort, unabhängig von noch ungespeicherten Rollenänderungen. Bedienen dürfen echte HA-Administratoren und Eigentümer.
+Eine **Darstellung** legt die sichtbaren Dashboards und deren Reihenfolge fest. Eine **App-Rolle** legt die Rechte in allen beteiligten Anwendungen fest. Die Rechte der Rolle „Benutzer“ werden je App einmal gepflegt und gelten für alle zugeordneten Benutzer. Das Ändern einer Darstellung verändert keine App-Rechte.
 
-Automationen können `family_access_manager.set_vacation` mit `enabled: true/false` verwenden. Die bisherigen Light-/Shutter-Dienste leiten an diesen Dienst weiter und behalten den ursprünglichen HA-Benutzerkontext: echte Administratoren oder vertrauenswürdige HA-Automationen dürfen schalten. Ein reines Anwendungs-Verwaltungsrecht berechtigt nicht zum globalen Umschalten. Alte lokale WebSocket-Schreibzugriffe und Sicherungswerte können den zentralen Modus nicht überschreiben.
+1. Unter **Dashboards** eine Darstellung anlegen, benennen und Dashboards freigeben. Nur gewählte Dashboards lassen sich mit den Pfeilen sortieren. **Nicht gewählt** ist zunächst zugeklappt; die Suche zeigt auch Treffer in diesem Bereich.
+2. In der **Rollenverwaltung** die gemeinsamen App-Rollen **Admin** und **Benutzer** oder eigene Rollen verwalten. In jedem Anwendungstab die Rechte der ausgewählten App-Rolle festlegen.
+3. Unter **Benutzer → Zuordnung** die Darstellung und die App-Rolle wählen. Der separate Dashboard-Schalter aktiviert die Beschränkung von Seitenleiste und Dashboardauswahl. Ohne diesen Schalter bleibt die native HA-Navigation erhalten; App-Rechte gelten unabhängig davon.
+4. **Änderungen speichern**. Mehrere App-Rollen ergänzen sich. Bereits bestehende Kombinationen mehrerer Darstellungen bleiben erhalten, bis bewusst eine andere Darstellung gewählt wird.
+5. Optional unter **Einstellungen → Dashboard-Konfigurationen sperren** auch neue direkte Lovelace-Konfigurationsanfragen nach der Darstellung prüfen.
 
+**Admin** ist eine App-Rolle und erzeugt keine HA-Administratorrechte. **Family Administration** und der zentrale Urlaubsschalter sind ausschließlich für echte HA-Administratoren und Eigentümer verfügbar. Eingeschränkte Konten sehen keinen Verwaltungseintrag; direkte Panel- und API-Aufrufe sind ebenfalls geschützt. Native Geräte-, Eigentümer- und persönliche Kontoprüfungen der Anwendungen gelten zusätzlich.
 
-Benutzerrollen und Dashboardfreigaben für Home Assistant. Die Oberfläche verwendet vollständig das lokal eingebundene **HA UI Kit 1.6.0**.
+Die Rolle „Benutzer“ wird mit Rechten für eigene Aufgaben, eigene Essenseinträge, eigene Wecker und Musik sowie der Bedienung von Rollladenprogrammen vorbereitet. Verwaltungsrechte, das Ändern fremder Essenseinträge und die Verwaltung fremder Wecker bleiben zunächst ausgeschaltet. Die Voreinstellungen können je App zentral angepasst werden. Neue Benutzer erhalten keine automatische Rollenzuweisung.
 
-Family Access ist eine reine Verwaltungsoberfläche für Administratoren und Eigentümer. Normale Benutzer sehen keinen Family-Access-Eintrag; auch der direkte Panel-Start ist serverseitig geschützt.
+## Vorhandene Rechte übernehmen
 
-## Dashboardzugriff einrichten
+Beim Update werden bisher gemischte Rollen einmalig in Darstellungen und App-Rollen getrennt. Gleiche App-Freigaben werden wiederverwendet. Effektive Berechtigungen, ausdrücklich verweigerte Freigaben, Dashboardfreigaben und die bisherige Benutzeraktivierung bleiben erhalten. Reine App-Rollen erscheinen nicht mehr als leere Dashboard-Darstellungen.
 
-1. Unter **Rollenverwaltung** eine Rolle anlegen.
-2. Unter **Dashboards** die Rolle wählen und die gewünschten Dashboards über die Schalter freigeben. Hier auch sortieren und die Reihenfolge auf Benutzer übernehmen.
-3. Unter **Benutzer** das Konto aktivieren, die Rolle wählen und **Änderungen speichern**.
-4. Die Seitenleiste zeigt diesem Konto nur freigegebene Dashboards sowie die eigenen Konto-/internen Routen. Allgemeine Panels wie Verlauf, Kalender und Medien werden ausgeblendet; das feste Konto- und Benachrichtigungsmenü bleibt bestehen.
-5. Für direkte Dashboard-Konfigurationsanfragen unter **Einstellungen → Dashboard-Konfigurationen sperren** die Sperre einschalten und speichern.
-6. Mit einem separaten Benutzerkonto prüfen. Nach einem Update Home Assistant neu starten und den Browser vollständig neu laden.
+Übernommene App-Rechte bleiben unter „Übernommene Rechte …“ verfügbar. Um alle Kinder auf ein gemeinsames Profil umzustellen, unter **Benutzer → Zuordnung** die bisherigen App-Rollen bewusst durch **Benutzer** ersetzen. Vorher die Rechte dieser gemeinsamen Rolle in den Anwendungstabs prüfen. Mehrere zugewiesene Rollen ergänzen sich; zum Entziehen eines Rechts auch übernommene Rollen beachten.
 
-Eine Rolle lässt sich vorbereiten, ohne das Konto zu aktivieren. Beim Ausschalten bleibt die Rolle gespeichert und die normale HA-Navigation wird wiederhergestellt. Administratoren und Eigentümer behalten Vollzugriff.
+Rollen und Darstellungen werden erst nach Rückfrage aus dem Entwurf gelöscht. Abbrechen, Schließen und Escape erhalten den Eintrag. Zugewiesene Einträge lassen sich nicht löschen. Erst **Änderungen speichern** übernimmt den Entwurf dauerhaft. Gleichzeitige Änderungen werden über Revisionen erkannt; alte Browser müssen vor dem Speichern neu laden.
 
-Gerätefreigaben sind für diesen Ablauf nicht erforderlich und werden nicht mehr angeboten. Die Bedienung in freigegebenen Dashboards folgt den nativen HA-Rechten. Vorhandene Anzeigen-/Bedienen-/Bearbeiten-Zuordnungen erscheinen als freigegeben und bleiben bis zu einer Änderung gespeichert; es wird damit kein eigener schreibgeschützter HA-Modus oder Administratorzugriff vergeben.
+## Zentraler Urlaubsmodus
 
-## Rollen löschen und Versionen
+Der eigene Tab **Urlaubsmodus** steuert Light Manager, Shutter Manager und Hausarbeiten. Es gibt keinen weiteren globalen Urlaubsschalter in diesen Anwendungen. Die Option „Im Urlaub pausieren“ je Programm bleibt erhalten; andere Programme laufen weiter. Hausarbeiten pausieren ohne Änderung ihres Wiederholungsrhythmus und laufen beim Ausschalten ab heute weiter.
 
-Unter **Rollenverwaltung** stehen Anlegen, Umbenennen und Löschen separat zur Verfügung. Das Stiftsymbol benennt eine Rolle um. Das Papierkorbsymbol öffnet zuerst **Rolle löschen?**. **Abbrechen**, Schließen oder Escape erhalten die Rolle. Erst **Rolle löschen** entfernt sie aus dem Entwurf; **Änderungen speichern** übernimmt den Entwurf dauerhaft. Zugewiesene Rollen können weiterhin nicht gelöscht werden.
+Ein bisher aktiver Urlaubsmodus wird einmalig übernommen. Vergangene Hausarbeitspausen bleiben erhalten, auch bei späterem Start nach einer zentralen Änderung. Eine bewusste zentrale Entscheidung hat Vorrang. Bei Ausfall der Zentrale behalten die Anwendungen den zuletzt bestätigten Zustand.
 
-Unter **Einstellungen → Versionen** stehen Oberfläche, Integration und HA UI Kit in einem eigenen sichtbaren Bereich. Die veröffentlichte Version ist ein reguläres Release ohne Beta-/Prüfversionskennzeichnung.
+Der Schalter speichert sofort, unabhängig von ungespeicherten Rollenänderungen. Automationen können weiterhin `family_access_manager.set_vacation` mit `enabled: true` oder `enabled: false` verwenden. Die bisherigen Light-/Shutter-Dienste leiten den ursprünglichen HA-Kontext an diesen Dienst weiter. Echte HA-Administratoren und vertrauenswürdige Automationen dürfen schalten; App-Verwaltungsrechte allein genügen dafür nicht.
 
-## Dashboardauswahl im HA-Profil
+**Light Manager 1.5.1** zeigt pausierte Schaltungen in der Zeitübersicht mit „Urlaubspause“. **Shutter Manager 1.9.1** zeigt pausierte Fahrten weiterhin und verwendet in der Hilfe den neuen zentralen Tab. Die Anzeige führt keine Schaltung aus.
 
-Bei aktivierten Family-Access-Benutzern wird auch **Profil → Erscheinungsbild → Dashboard** nach den Freigaben ihrer Rolle gefiltert. Diese Liste wird separat von der Seitenleiste geladen. Nicht freigegebene oder ausschließlich Administratoren vorbehaltene Dashboards erscheinen dort nicht. Nicht aktivierte Konten und Administratoren behalten die native HA-Auswahl. Die HA-Option **Auto (Systemeinstellungen verwenden)** bleibt bestehen.
+## Reihenfolge und persönliche Admin-Seitenleiste
 
-Die Filterung wirkt auf neue Anfragen. Eine bereits geöffnete Profilansicht nach Änderungen neu öffnen; nach dem Update HA neu starten und den Browser vollständig neu laden. Für Paul muss Family Access aktiviert und die gewünschte Rolle zugewiesen sein.
+**Dashboards → Reihenfolge übernehmen** überträgt die Sortierung auf ausgewählte Konten. Zugeordnete Konten sind vorausgewählt; auch andere persönliche Benutzer und Administratoren lassen sich auswählen. Bei offenen Änderungen speichert **Speichern und übernehmen** zunächst den Rechteentwurf. Die Aktion ändert ausschließlich die native Seitenleistenreihenfolge. Sichtbarkeit, Rollen, Startseiten und andere persönliche HA-Einstellungen bleiben erhalten. Teilweise fehlgeschlagene Übernahmen werden angezeigt und protokolliert.
 
-Die persönliche Startseite wird im nativen HA-Profil gespeichert. Andere Profileinstellungen bleiben erhalten.
+Unter **Benutzer** können echte Administratoren für jedes Administratorkonto eigene Dashboards ein- und ausblenden. Der native Vollzugriff bleibt bestehen. Eine ausgeblendete Startseite muss ausdrücklich durch eine sichtbare Startseite oder das eigene Profil ersetzt werden.
 
-## Reihenfolge und Admin-Seitenleiste
+Für aktivierte normale Benutzer werden sowohl die Seitenleiste als auch **Profil → Erscheinungsbild → Dashboard** nach der Darstellung gefiltert. „Auto (Systemeinstellungen verwenden)“ bleibt verfügbar. Bereits geöffnete Profilansichten nach Änderungen neu öffnen.
 
-Unter **Rollen → Dashboards** nur die freigegebenen Dashboards mit den Pfeilen sortieren. Die übrigen Dashboards stehen im aufklappbaren Block **Nicht gewählt** darunter und haben keine Sortierpfeile. **Reihenfolge übernehmen** öffnet die Benutzerauswahl; die Konten der Rolle sind vorausgewählt. Es lassen sich auch andere persönliche Benutzer einschließlich Administratoren auswählen. Bei ungespeicherten Änderungen zeigt die Aktion **Speichern und übernehmen** ausdrücklich an, dass zunächst alle vorbereiteten Rollen-/Rechteänderungen gespeichert werden.
+## Fehlerprotokoll und Versionen
 
-Die Übernahme ändert nur die native HA-Seitenleistenreihenfolge der gewählten Dashboards bei den gewählten Konten. Freigaben, Aktivierungen, ausgeblendete Einträge, andere persönliche Einstellungen und Startseiten bleiben erhalten. Nicht freigegebene Dashboards bleiben unsichtbar. Andere Panels behalten ihre relative Reihenfolge. Neu freigegebene Dashboards werden an die gewählte Reihenfolge angehängt; nicht gewählte und entfernte Pfade werden bei der Übernahme ignoriert. Ihre persönliche Reihenfolge bleibt unberührt. Die Benutzer können ihre persönliche Reihenfolge anschließend weiterhin in HA ändern. Bei einzelnen Speicherfehlern nennt die Oberfläche die betroffenen Konten; Details stehen im Fehlerprotokoll.
+**Fehler** enthält die letzten 200 fehlgeschlagenen Berechtigungsprüfungen mit Benutzer, Aktion, Ziel und Grund, auch nach HA-Neustarts. Nur echte HA-Administratoren können es abrufen. Tokens, Authentifizierungsheader, vollständige Anfragen und Serviceparameter werden nicht gespeichert. Allgemeine Integrations- oder Anmeldefehler gehören weiterhin in das HA-Protokoll.
 
-Unter **Benutzer** öffnet das Stiftsymbol beim jeweiligen Administrator dessen **sichtbare Dashboards**. Diese Auswahl gilt pro Admin und erteilt oder entzieht keine Rechte. Im selben Dialog lässt sich die **Startseite** wählen. Da HA die Startseite immer zeigt, muss sie sichtbar bleiben; alternativ ein anderes Dashboard oder **Eigenes Profil** wählen. Die Aktion **Seitenleiste speichern** speichert diese persönliche Auswahl sofort, unabhängig von vorbereiteten Rollenänderungen. Globale HA-Einstellungen für die Dashboard-Sichtbarkeit bleiben maßgeblich.
+Unter **Einstellungen → Versionen** stehen Oberfläche, Integration und HA UI Kit. Reguläre Versionen verwenden MAJOR.MINOR.PATCH ohne Beta- oder Commit-Hash.
 
-HA übernimmt diese Einstellungen über seinen eigenen Benutzerspeicher und dessen Live-Abonnements in offene Browser. Ohne solche Abonnements hilft vollständiges Neuladen. Bestehende ausschließlich im Browser gespeicherte ältere Einstellungen werden durch die hier explizit gewählte Auswahl ersetzt.
+## Installation und Update
 
-**Prüfen** war eine technische Diagnose für eigene Dashboardanfragen sowie HTTP und WebSocket. Sie liegt jetzt unter **Einstellungen → Diagnose**. Bei Rollen wählt nur noch ein Feld die Rolle; das Stiftsymbol öffnet **Rolle umbenennen**.
+Das bestehende Repository `https://github.com/v9h45n47mh-lab/family-access-manager` in HACS als **Integration** verwenden. Version **1.3.0** installieren, HA neu starten und Browser/App vollständig neu laden. Bestehende Installationen erhalten den neuen Anzeigenamen automatisch. Der technische Integrationspfad und die verbundenen App-Protokolle bleiben kompatibel.
 
-## Fehlerprotokoll
+Bei Erstinstallation unter **Einstellungen → Geräte & Dienste → Integration hinzufügen → Family Administration** einrichten. Die Quelle ist ein benutzerdefiniertes Repository und nicht automatisch Teil des offiziellen Katalogs.
 
-Administratoren öffnen **Family Access → Fehler**. Pro Eintrag werden Zeitpunkt, Benutzer, Aktion, Ziel, Grund und Anfrageweg angezeigt. **Aktualisieren** lädt neue Einträge, ohne ungespeicherte Rollenänderungen zu verwerfen.
+Für die manuelle Installation aus [GitHub Releases](https://github.com/v9h45n47mh-lab/family-access-manager/releases) `family_access_manager.zip` laden und `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren. Das vollständige Quellpaket heißt `Family_Administration_1.3.0.zip`. HACS bei alten Commit-Hash-Anzeigen neu laden und ausdrücklich die reguläre Version wählen.
 
-Die letzten **200 Fehler** werden begrenzt gespeichert und bleiben über HA-Neustarts erhalten. Erfasst werden abgelehnte authentifizierte eigene HTTP-/WebSocket-Anfragen, Ablehnungen der zusätzlichen Dashboard-Sperre, native HA-Administratorablehnungen dieser Dashboardaktionen sowie technische Fehler eigener Anfragen. Die Datei liegt getrennt von der Rechtekonfiguration im HA-Storage. Tokens, Authentifizierungsheader, vollständige Anfrageinhalte und Serviceparameter werden nicht protokolliert. Normale Benutzer können das Protokoll auch nicht über einen direkten API-Aufruf lesen.
+## Schutzumfang
 
-Fehler vor der Anmeldung oder beim Laden einer anderen Integration gehören in das allgemeine HA-Protokoll. Ein Fehler beim Speichern der Diagnose verändert keine Berechtigungsentscheidung.
+Die zusätzliche native Sperre prüft neue Lovelace-Konfigurationsanfragen. Bereits geladene Inhalte lassen sich nicht zurückholen. Allgemeine HA-Geräte-/System-APIs, Suche, Historie, Kameras, Assist, Automationen und Drittintegrationen folgen weiterhin den nativen HA-Rechten. Das Ausblenden einer Seitenleiste ist allein keine allgemeine Sicherheitsgrenze. HA-Gruppen, Tokens und Netzwerkeinstellungen werden nicht verändert.
 
-## Funktionsumfang
+Die App-Rollen werden von den beteiligten eigenen Integrationen im Backend geprüft. Bei eingerichteter, aber nicht verfügbarer zentraler Verwaltung werden normale Benutzer nicht auf frühere lokale Verwaltungsrechte zurückgestuft. Echte HA-Administratoren behalten Wiederherstellungszugriff. Beim Entfernen der Integration entfallen die eigene Navigationsfilterung und Dashboard-Sperre.
 
-- Bestehende persönliche HA-Konten verwenden; Verwaltung ausschließlich durch Administratoren und Eigentümer.
-- Rollen und Dashboardfreigaben verwalten, Benutzer einzeln aktivieren.
-- Native Panelliste je aktiviertem Benutzer filtern, ohne globale Panels oder Startseitenpräferenzen zu verändern.
-- Offene Browser nach erfolgreichen Rechteänderungen über das native Ereignis `panels_updated` aktualisieren.
-- Eigene Dashboard-Anfragen im Backend prüfen; identische Prüfinstanz für HTTP und WebSocket.
-- Optional `lovelace/config`, `lovelace/config/save` und `lovelace/config/delete` prüfen. Native HA-Administratorprüfungen bleiben erhalten.
-- Revisionsprüfung gegen gleichzeitiges Überschreiben, gespeicherte Rollen und Aktivierungen ohne Datenverlust übernehmen.
-- Kompakte gemeinsame Benutzerzeilen für Name, Rolle und Aktivierung; mobil zusammengehörig untereinander. Gemeinsame Komponenten für Kopf, Navigation, Listen, Auswahlfelder, Schalter, Buttons, Dialoge, Meldungen und Protokoll. Keine lokalen CSS-Überschreibungen oder CDN-Abhängigkeiten.
+## Entwicklung und Prüfung
 
-## Installation
-
-### Marketplace / HACS
-
-Das Repository `https://github.com/v9h45n47mh-lab/family-access-manager` als benutzerdefiniertes Repository der Kategorie **Integration** hinzufügen. Die reguläre Version **1.1.0** installieren und HA neu starten. Dafür müssen keine Vorabversionen eingeblendet werden. Anschließend unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
-
-Die Quelle ist als benutzerdefiniertes Repository nutzbar; sie wird nicht automatisch Teil des offiziellen Katalogs.
-
-### Manuell
-
-Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.1.0.zip`.
-
-### Falls HACS noch einen Commit-Hash anzeigt
-
-In HACS beim **Family Access Manager** die Repositoryinformationen neu laden und die reguläre Version **1.1.0** installieren. Bis zu dieser Installation kann die bisher installierte Version weiterhin als Commit-Hash erscheinen. Danach HA neu starten und den Browser vollständig neu laden. Falls bisher ausdrücklich der Entwicklungszweig `main` gewählt war, beim erneuten Herunterladen **1.1.0** wählen.
-
-Der GitHub-Endpunkt `releases/latest` liefert jetzt die reguläre Version. Künftige reguläre Releases werden automatisch ohne Vorabversionsmarkierung und als neueste Version veröffentlicht; Beta-/RC-Versionen bleiben im Vorabkanal.
-
-## Schutzumfang und Grenzen
-
-Diese Integration verwaltet **Dashboardzugriff und Navigation**. Die optionale native Sperre schützt neue Lovelace-Konfigurationsanfragen; bereits geladene Inhalte lassen sich nicht zurückholen. Allgemeine HA-Geräte-/System-APIs, Suche, Historie, Kameras, Assist, Automationen und Drittintegrationen bleiben durch die nativen HA-Rechte bestimmt. Das Ausblenden einer Seitenleiste ist allein keine allgemeine Sicherheitsgrenze.
-
-Eine bisherige, nicht freigegebene Startseite kann als nicht verfügbar erscheinen; dann ein freigegebenes Dashboard öffnen. Die Rollenfilterung verändert keine Startseitenpräferenzen, HA-Gruppen, Tokens oder Netzwerkeinstellungen. Nur die ausdrückliche Admin-Seitenleistenaktion speichert die dort gewählte Startseite. Beim Entfernen oder fehlgeschlagenen Laden entfällt auch ihre Filterung und zusätzliche Sperre.
-
-Die Oberfläche bietet keine Geräteverwaltung und keinen eigenen Dashboardeditor. Altfelder und bisherige interne Prüfendpunkte bleiben für die Abwärtskompatibilität erhalten. Ein Live-Test mit deiner produktiven HA-Instanz und deinem Nabu-Casa-Konto ist noch erforderlich. [Prüfablauf](docs/LOKAL_CLOUD_TEST.md) und [Prüfergebnisse](docs/TESTERGEBNISSE.md) beschreiben den nachgewiesenen Umfang.
-
-## Versionen und Entwicklung
-
-[Semantische Versionierung](docs/VERSIONING.md): reguläre Releases als `1.0.0`, `1.1.0`, `1.1.0` usw. Nur gezielte Vorabtests erhalten einen Zusatz wie `1.1.0-beta.1`. Die bisherigen Tags bleiben erhalten.
-
-Die Benutzeransicht enthält nur einen kurzen Hinweis; ausführliche Hinweise und Zugriffsschutz liegen unter dem Zahnrad **Einstellungen**.
-
-Die pytest-Suite verwendet HA 2026.10.4; ein unabhängiger Installations-/API-Test verwendet Core 2026.11.1. Die Browserprüfung vergleicht die tatsächlich gerenderten Komponenten direkt mit dem gepinnten UI Kit bei 1100/430/390/375/320 px und hellen/dunklen Themes.
+Backendtests verwenden echte HA-Testinstanzen. Zusätzlich läuft eine unabhängige Installations-/API-Prüfung gegen HA Core 2026.11.1 sowie ein gepinnter Integrationstest mit den tatsächlichen Light-, Shutter- und Hausarbeiten-Managern. Chromium prüft 1100/430/390/375/320 px in hellen und dunklen Themes mit direktem Kit-Stilabgleich. Die produktive HA-/Nabu-Casa-Instanz wird dadurch nicht installiert oder verändert.
 
 ```bash
-# Separate Python-3.14-Umgebung
 pip install -r requirements-test.txt
 python -m pytest
-
-# Separate Umgebung für aktuellen Core
-pip install homeassistant==2026.11.1 home-assistant-frontend==20261028.5
-PYTHONPATH=. python tests/smoke_current_core.py
-
 npm ci --ignore-scripts
 npm run check:kit
 npm run test:panel
@@ -124,15 +82,4 @@ npm run test:browser
 python scripts/build_release.py
 ```
 
-Tests ausschließlich mit temporären Konfigurationen ausführen. Ein produktives HA-Konfigurationsverzeichnis ist kein Testverzeichnis.
-
-
-## Zentrale Rollenrechte
-
-Acht eigene Anwendungstabs: Light Manager, Shutter Manager, Essensplaner, Hausarbeiten, Gartenarbeit, Spülmaschine, Music Manager und Wecker. Mehrfachrollen sind in der Benutzerverwaltung auswählbar. Fehlgeschlagene Anwendungsprüfungen erscheinen im bestehenden Fehlerprotokoll. Rollen werden weiterhin erst nach Bestätigung gelöscht.
-
-Berechtigungen werden jetzt in **Family Access → Anwendung → Rolle** verwaltet. Benutzer können mehrere Rollen erhalten; ihre Freigaben ergänzen sich. Vorhandene Anwendungsrechte werden einmalig in Rollen mit dem Zusatz „übernommen“ importiert und den bisherigen Benutzern zugeordnet. Dashboardfreigaben und die Aktivierung der Dashboardnavigation werden dadurch nicht verändert.
-
-Zum Entziehen eines Rechts alle zugewiesenen Rollen einschließlich übernommener Rollen prüfen. Neue Benutzer erhalten nach der Übernahme keine automatischen Anwendungsrechte. Echte HA-Administratoren behalten Vollzugriff zur Wiederherstellung. Geräte-, Eigentümer- und externe Kontoberechtigungen gelten zusätzlich; eine Rolle erzeugt keine HA-Administratorrechte.
-
-**Aktualisierung:** zuerst Family Access Manager 1.1.0 oder neuer, danach die beteiligten Anwendungen aktualisieren und Home Assistant neu starten. Solange Family Access nicht eingerichtet ist, bleibt die bisherige Rechtevergabe erhalten. Ist Family Access eingerichtet, aber nicht verfügbar oder zu alt, werden Anwendungsaktionen für normale Benutzer abgelehnt. Lokale Benutzer-/Personen-, Geräte- und Musikkontozuordnungen bleiben für Identität und Eigentum erhalten; Rechte werden zentral vergeben.
+Tests ausschließlich mit temporären HA-Konfigurationen ausführen. [Prüfablauf](docs/LOKAL_CLOUD_TEST.md) · [Versionierung](docs/VERSIONING.md) · [Änderungen](CHANGELOG.md)

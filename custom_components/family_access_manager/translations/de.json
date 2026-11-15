@@ -2,12 +2,12 @@
   "config": {
     "step": {
       "user": {
-        "title": "Family Access Manager einrichten",
-        "description": "Family Access verwaltet Rollen, Dashboardfreigaben und die Seitenleiste je Benutzer. Administratoren behalten Vollzugriff. Vorhandene Home-Assistant-Rechte bleiben bestehen. Die optionale Dashboard-Sperre aktivierst du in den Einstellungen. Geräte- und Systemrechte werden von Home Assistant verwaltet."
+        "title": "Family Administration einrichten",
+        "description": "Family Administration verwaltet Rollen, Dashboardfreigaben und die Seitenleiste je Benutzer. Administratoren behalten Vollzugriff. Vorhandene Home-Assistant-Rechte bleiben bestehen. Die optionale Dashboard-Sperre aktivierst du in den Einstellungen. Geräte- und Systemrechte werden von Home Assistant verwaltet."
       }
     },
     "abort": {
-      "already_configured": "Family Access Manager ist bereits eingerichtet."
+      "already_configured": "Family Administration ist bereits eingerichtet."
     }
   }
 }

@@ -68,7 +68,7 @@ class PermissionErrorLog:
             "reason": safe_text(reason, 500), "source": safe_text(source), "kind": safe_text(kind),
         }
         self.events.appendleft(entry)
-        _LOGGER.warning("Family Access %s: Benutzer=%s Aktion=%s Ziel=%s Grund=%s",
+        _LOGGER.warning("Family Administration %s: Benutzer=%s Aktion=%s Ziel=%s Grund=%s",
                         entry["kind"], entry["user_id"], entry["operation"], entry["target"], entry["reason"])
         try:
             self.store.async_delay_save(lambda: {"events": self.snapshot()}, 5)
