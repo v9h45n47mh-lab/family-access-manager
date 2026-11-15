@@ -42,6 +42,7 @@ def default_policy() -> dict:
             },
         },
         "bindings": {},
+        "enabled_users": [],
     }
 
 
@@ -49,7 +50,7 @@ def validate_policy(raw: object) -> dict:
     """Validate strictly before persistence; never coerce truthy strings."""
     if type(raw) is not dict:
         raise InvalidPolicy("Die Rechtekonfiguration muss ein Objekt sein.")
-    expected = {"revision", "native_dashboard_gate", "device_control", "roles", "bindings"}
+    expected = {"revision", "native_dashboard_gate", "device_control", "roles", "bindings", "enabled_users"}
     if set(raw) != expected:
         raise InvalidPolicy("Die Rechtekonfiguration enthält fehlende oder unbekannte Felder.")
     if type(raw["revision"]) is not int or raw["revision"] < 0:
@@ -91,13 +92,32 @@ def validate_policy(raw: object) -> dict:
             raise InvalidPolicy("Ungültige Rollenzuordnung.")
         if not all(isinstance(r, str) and r in roles for r in assigned):
             raise InvalidPolicy("Eine zugewiesene Rolle existiert nicht.")
+    enabled = raw["enabled_users"]
+    if (type(enabled) is not list or len(enabled) > 500
+            or not all(isinstance(uid, str) for uid in enabled)
+            or len(enabled) != len(set(enabled))
+            or any(uid not in bindings for uid in enabled)):
+        raise InvalidPolicy("Aktivierte Benutzer benötigen eine eindeutige Benutzer- und Rollenzuordnung.")
     if len(json.dumps(raw).encode()) > 250_000:
         raise InvalidPolicy("Die Rechtekonfiguration ist zu groß.")
     return deepcopy(raw)
 
 
+def migrate_policy(raw: object) -> dict:
+    """Keep existing managed users enabled when loading the pre-0.3 format.
+
+    Only storage loading uses this migration. API writes require the new,
+    explicit field so an old or ambiguous request cannot enable a user.
+    """
+    legacy_fields = {"revision", "native_dashboard_gate", "device_control", "roles", "bindings"}
+    if type(raw) is dict and set(raw) == legacy_fields and type(raw["bindings"]) is dict:
+        raw = deepcopy(raw)
+        raw["enabled_users"] = list(raw["bindings"])
+    return validate_policy(raw)
+
+
 class Policy:
-    """Roles are additive; an empty binding is deliberately deny-all."""
+    """Roles apply only to enabled users; an enabled empty binding denies all."""
 
     def __init__(self, config: dict):
         self.config = validate_policy(config)
@@ -106,10 +126,10 @@ class Policy:
         return user.is_active and (user.is_owner or user.is_admin)
 
     def managed(self, user: Principal) -> bool:
-        return user.id in self.config["bindings"] and not self.privileged(user)
+        return user.id in self.config["enabled_users"] and not self.privileged(user)
 
     def roles(self, user: Principal) -> list[dict]:
-        if not user.is_active:
+        if not user.is_active or not self.managed(user):
             return []
         return [self.config["roles"][r] for r in self.config["bindings"].get(user.id, [])]
 

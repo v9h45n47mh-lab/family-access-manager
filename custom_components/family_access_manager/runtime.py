@@ -12,7 +12,7 @@ from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN, STORAGE_KEY, STORAGE_VERSION, VERSION
 from .gate import DashboardGate, principal
-from .policy import InvalidPolicy, Policy, Resource, default_policy, validate_policy
+from .policy import InvalidPolicy, Policy, Resource, default_policy, migrate_policy, validate_policy
 from .services import validate_service
 
 
@@ -39,7 +39,11 @@ class Runtime:
         saved = await self.store.async_load()
         if saved is not None:
             # Never silently discard a damaged policy and grant wider access.
-            self.policy = Policy(saved)
+            migrated = migrate_policy(saved)
+            next_policy = Policy(migrated)
+            if migrated != saved:
+                await self.store.async_save(migrated)
+            self.policy = next_policy
 
     def audit(self, user_id, operation, target, allowed):
         self.events.appendleft({

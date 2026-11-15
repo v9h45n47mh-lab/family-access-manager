@@ -10,6 +10,7 @@ from custom_components.family_access_manager.services import validate_service
 def config():
     c = default_policy()
     c["bindings"] = {"paul": ["family"]}
+    c["enabled_users"] = ["paul"]
     c["roles"]["family"]["dashboards"] = {"dashboard-kids": "edit"}
     c["roles"]["family"]["entities"] = {"light.paul": "view"}
     c["roles"]["family"]["labels"] = {"paul": "control"}

@@ -22,6 +22,18 @@ class FamilyAccessPanel extends HTMLElement {
   connectedCallback() {
     this.unbind ||= bindUI(this.shadowRoot, event => {
       if (event.action === 'navigate') { this.tab=event.data.page==='settings'?'scope':event.data.page; this.render(); return; }
+      if (event.action === 'user-activation') {
+        const uid=event.data.user;
+        if(event.checked) {
+          this.policy.bindings[uid] ||= [];
+          if(!this.policy.enabled_users.includes(uid))this.policy.enabled_users.push(uid);
+        } else this.policy.enabled_users=this.policy.enabled_users.filter(id=>id!==uid);
+        event.element.classList.toggle('on',event.checked);
+        event.element.setAttribute('aria-checked',String(event.checked));
+        const user=this.snapshot.users.find(u=>u.id===uid);
+        event.element.closest('.setting-row').querySelector('.row-text small').textContent=this.userDescription(user);
+        this.markDirty(); return;
+      }
       if (event.action === 'setting-change') {
         this.policy[event.data.setting]=event.checked;
         event.element.classList.toggle('on',event.checked);
@@ -99,8 +111,7 @@ class FamilyAccessPanel extends HTMLElement {
     if(el.id === "role-select") { this.roleId=el.value; this.query=""; this.render(); return; }
     if(el.id === "section-select") { this.section=el.value; this.query=""; this.render(); return; }
     if(el.dataset.user) {
-      if(el.value === "unmanaged") delete this.policy.bindings[el.dataset.user];
-      else this.policy.bindings[el.dataset.user]=el.value === "deny"?[]:[el.value];
+      this.policy.bindings[el.dataset.user]=el.value === "deny"?[]:[el.value];
       this.markDirty(); return;
     }
     if(el.dataset.grant) {
@@ -111,16 +122,19 @@ class FamilyAccessPanel extends HTMLElement {
     }
     if(el.dataset.setting) { this.policy[el.dataset.setting]=el.checked; this.markDirty(); }
   }
+  userDescription(user) {
+    return (this.policy.enabled_users.includes(user.id)?'Family Access aktiv':'Family Access aus')+(user.active?'':' · HA-Konto inaktiv');
+  }
   userContent() {
     const roles=Object.entries(this.policy.roles).map(([id,r])=>[id,r.name]);
     const users=this.snapshot.users.map(u=>{
-      const assigned=this.policy.bindings[u.id],value=assigned===undefined?'unmanaged':assigned[0]||'deny';
+      const assigned=this.policy.bindings[u.id],value=assigned?.[0]||'deny';
       return u.admin ? row({title:u.name,description:'Administrator',trailing:statusBadge({label:'Vollzugriff',state:'active',icon:'lock'})})
-        : `<div class="grid">${row({title:u.name,description:u.active?'Benutzer':'Inaktiv'})}${kitSelect({id:'user-'+u.id,label:'Rolle für '+u.name,value,options:options([['unmanaged','Nicht verwaltet'],['deny','Kein Zugriff'],...roles])},{user:u.id})}</div>`;
+        : `<div class="grid">${row({title:u.name,description:this.userDescription(u),trailing:toggle({label:'Family Access für '+u.name,action:'user-activation',iconOnly:true,checked:this.policy.enabled_users.includes(u.id),data:{user:u.id}})})}${kitSelect({id:'user-'+u.id,label:'Rolle für '+u.name,value,options:options([['deny','Kein Zugriff'],...roles])},{user:u.id})}</div>`;
     }).join('');
-    return section({id:'users',title:'Benutzer',content:feedback('Ein Konto erhält die gewählte Rolle. Administratoren behalten Vollzugriff.')+users})
+    return section({id:'users',title:'Benutzer',content:feedback('Family Access je Benutzer einschalten und eine Rolle wählen. Ausgeschaltet bleibt der native HA-Zugriff unverändert; die Rolle bleibt gespeichert. Neue Benutzer sind ausgeschaltet. Änderungen speichern. Administratoren behalten Vollzugriff.')+users})
       + section({id:'activation',title:'Prüfversion aktivieren',content:
-        row({title:'Dashboard-Konfigurationen für zugeordnete Benutzer sperren',description:'Prüft direkte Lovelace-Konfigurationsanfragen. Geräte, Verlauf und andere HA-APIs bleiben außerhalb dieser Sperre.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',iconOnly:true,checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})
+        row({title:'Dashboard-Konfigurationen für aktivierte Benutzer sperren',description:'Zusätzliche Dashboard-Sperre nur für Benutzer mit eingeschaltetem Family Access. Geräte, Verlauf und andere HA-APIs bleiben außerhalb dieser Sperre.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',iconOnly:true,checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})
         +row({title:'Freigegebene Geräte über die Family-Access-API bedienen',description:'Ohne diese Option kann über diese API nur der virtuelle Testschalter geschaltet werden.',trailing:toggle({label:'Gerätebedienung freigeben',action:'setting-change',iconOnly:true,checked:this.policy.device_control,data:{setting:'device_control'}})})});
   }
   roleContent() {
@@ -144,7 +158,7 @@ class FamilyAccessPanel extends HTMLElement {
     return section({id:'checks',title:'Zugriff prüfen',content:feedback('Diese Prüfung führt echte Anfragen mit dem angemeldeten HA-Konto aus. Der virtuelle Schalter bedient kein Gerät im Haus.')
       +`<div class="toolbar">${button({label:'HTTP und WebSocket prüfen',action:'api-check',variant:'primary'})}${button({label:'Testschalter anzeigen',action:'probe-read',disabled:!this.status.probe_entity_id})}${button({label:'Testschalter umschalten',action:'probe-toggle',disabled:!this.status.probe_entity_id})}</div>`
       +row({title:'Testentität',description:this.status.probe_entity_id||'Wird eingerichtet …'})
-      +feedback(this.status.is_admin?'Administratoren haben Vollzugriff. Für Ablehnungstests ein separates Konto ohne Administratorrechte verwenden.':'Rollen: '+(this.status.roles.join(', ')||'Keine Freigabe'))
+      +feedback(this.status.is_admin?'Administratoren haben Vollzugriff. Für Ablehnungstests ein separates Konto ohne Administratorrechte verwenden.':this.status.managed?'Family Access aktiv · Rollen: '+(this.status.roles.join(', ')||'Keine Freigabe'):'Family Access ist für dieses Konto ausgeschaltet. Der native HA-Zugriff bleibt unverändert. Die eigenen Geräte- und Dashboardfunktionen erfordern eine Aktivierung mit Freigabe.')
       +(this.output?textareaField({id:'test-result',label:'Ergebnis',value:JSON.stringify(this.output,null,2),rows:12}).replace('<textarea ','<textarea readonly '):'' )})
       +section({id:'allowed-dashboards',title:'Freigegebene Dashboards',content:this.status.dashboards.map(d=>row({title:d.name,trailing:button({label:'Konfiguration abrufen',action:'dashboard-read',data:{path:d.id}})})).join('')||emptyState('Keine Dashboards freigegeben.')});
   }
@@ -152,7 +166,7 @@ class FamilyAccessPanel extends HTMLElement {
     const facts=[['Eigene HTTP-/WebSocket-Anfragen','Rechteprüfung aktiv'],['Native Dashboard-Konfigurationen',this.status.native_dashboard_gate&&this.status.gate_available?'Sperre eingeschaltet':'Sperre ausgeschaltet'],['Allgemeine HA-Geräte-APIs','Noch nicht abgesichert'],['Bearbeiten als normaler Benutzer','Noch nicht freigeschaltet'],['Nabu Casa auf deiner Instanz','Vor Ort zu prüfen']];
     return section({id:'scope',title:'Umfang der Prüfversion',content:facts.map(([title,description])=>row({title,description})).join('')
       +helpContent({content:'<p>Vorhandene HA-Gruppen, Tokens und Netzwerkeinstellungen werden nicht verändert. Ausblenden in der Seitenleiste ist kein Bestandteil dieser Version. Beim Entfernen der Integration entfällt auch die optionale Dashboard-Sperre.</p><p>Die gleiche Entität hat innerhalb der Family-Access-API auf allen Dashboards dieselben Rechte. Automationen, Skripte, Kameras, Verlauf, Assist und Drittintegrationen sind noch nicht allgemein abgesichert.</p>'})
-      +versionInfo({frontend:'0.2.0',backend:this.status.version,ui:UI_VERSION})})
+      +versionInfo({frontend:'0.3.0',backend:this.status.version,ui:UI_VERSION})})
       +(this.snapshot?section({id:'audit',title:'Letzte Zugriffsprüfungen',content:this.snapshot.events.slice(0,30).map(ev=>row({title:ev.operation,description:ev.target+' · '+new Date(ev.time).toLocaleString('de-DE'),trailing:statusBadge({label:ev.allowed?'Erlaubt':'Abgelehnt',state:ev.allowed?'success':'error',icon:ev.allowed?'success':'failure'})})).join('')||emptyState('Noch keine Prüfungen. Nach einem Test neu laden.')}):'');
   }
   render() {

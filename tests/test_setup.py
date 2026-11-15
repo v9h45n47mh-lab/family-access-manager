@@ -19,6 +19,7 @@ async def test_entry_setup_probe_control_and_unload(hass, enable_custom_integrat
     assert hass.states.get(runtime.probe_entity_id).state == "off"
     config = deepcopy(runtime.policy.config)
     config["bindings"][child[0].id] = ["family"]
+    config["enabled_users"] = [child[0].id]
     config["roles"]["family"]["entities"][runtime.probe_entity_id] = "control"
     runtime.policy = Policy(config)
     await runtime.dispatch(child[0], "call_service", {

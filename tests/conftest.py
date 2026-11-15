@@ -54,6 +54,7 @@ def grant(runtime, child):
     from custom_components.family_access_manager.policy import Policy
     config = runtime.policy.config.copy()
     config["bindings"] = {child[0].id: ["family"]}
+    config["enabled_users"] = [child[0].id]
     config["roles"] = {"family": {"name": "Paul", "dashboards": {"dashboard-kids": "view"}, "entities": {"switch.probe": "view"}, "areas": {}, "labels": {}}}
     runtime.policy = Policy(config)
     return config

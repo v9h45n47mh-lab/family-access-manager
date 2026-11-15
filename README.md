@@ -1,4 +1,4 @@
-# Family Access Manager 0.2.0
+# Family Access Manager 0.3.0
 
 Erste installierbare Prüfversion einer Benutzerberechtigungsverwaltung für Home Assistant.
 
@@ -9,6 +9,12 @@ Erste installierbare Prüfversion einer Benutzerberechtigungsverwaltung für Hom
 Die Oberfläche verwendet die lokal mitgelieferten Originalkomponenten von **HA UI Kit 1.2.1** aus `v9h45n47mh-lab/ha-ui-kit`, einschließlich Panel-Kopf, Navigation, Zeilen, Auswahlfeldern, Schaltern, Buttons und Dialogen. Gemeinsame Darstellung und Symbole stammen vollständig aus dem Kit; es gibt keine lokale CSS-Überschreibung. Die Kit-Version ist per Prüfsummen fest gebunden.
 
 Die Umstellung verändert keine Berechtigungsregeln und ergänzt keine Kalenderfunktion. Ein Marketplace-Logo wird im lokalen `brand/`-Verzeichnis mitgeliefert.
+
+## Benutzer gezielt aktivieren
+
+Unter **Benutzer** kannst du **Family Access für …** pro Konto einschalten. Wähle die Rolle und bestätige mit **Änderungen speichern**. Eine Rollenzuordnung allein aktiviert den Benutzer nicht. Beim Ausschalten bleibt die Rolle gespeichert, und der native HA-Zugriff bleibt unverändert. Die eigene Family-Access-API erteilt ausgeschalteten Konten keine Geräte- oder Dashboardfreigaben. Administratoren und Eigentümer behalten Vollzugriff.
+
+Neue Benutzer sind ausgeschaltet. Beim Update werden bisher verwaltete Benutzer automatisch aktiviert, damit vorhandene Einschränkungen erhalten bleiben. Eine aktivierte Zuordnung mit **Kein Zugriff** hat weiterhin keine Freigaben. Für native Dashboard-Konfigurationsanfragen muss zusätzlich der globale Schalter **Dashboard-Konfigurationen sperren** eingeschaltet sein; dieser greift nur bei aktivierten Benutzern.
 
 ## Enthalten
 
@@ -26,7 +32,7 @@ Die Umstellung verändert keine Berechtigungsregeln und ergänzt keine Kalenderf
 ### Über Marketplace / HACS
 
 1. `https://github.com/v9h45n47mh-lab/family-access-manager` als **benutzerdefiniertes Repository** mit der Kategorie **Integration** hinzufügen.
-2. Da 0.2.0 ausdrücklich als Vorabversion veröffentlicht wird, gegebenenfalls Vorab-/Betaversionen in der Versionsauswahl anzeigen lassen.
+2. Da 0.3.0 ausdrücklich als Vorabversion veröffentlicht wird, gegebenenfalls Vorab-/Betaversionen in der Versionsauswahl anzeigen lassen.
 3. **Family Access Manager (Prüfversion)** herunterladen und HA neu starten.
 4. Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
 
@@ -34,7 +40,7 @@ Das Repository ist als benutzerdefinierte Quelle nutzbar; es ist nicht automatis
 
 ### Manuell über GitHub
 
-Im [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) steht `family_access_manager.zip` als Installationspaket bereit. Das vollständige Quellpaket heißt `Family_Access_Manager_0.2.0_Prototyp.zip`.
+Im [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) steht `family_access_manager.zip` als Installationspaket bereit. Das vollständige Quellpaket heißt `Family_Access_Manager_0.3.0_Prototyp.zip`.
 
 1. ZIP entpacken. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren.
 2. Home Assistant neu starten.
@@ -48,7 +54,7 @@ Es werden keine Ports, Netzwerkeinstellungen, HA-Gruppen oder vorhandenen Tokens
 1. Unter **Rollen** eine Rolle beispielsweise „Paul“ anlegen.
 2. Ein vorhandenes Dashboard zum **Anzeigen** freigeben.
 3. Unter **Gerätefreigaben → Entitäten** nach **Family Access Testschalter** suchen und zunächst **Anzeigen** wählen. Die tatsächliche Entitäts-ID wird auch unter **Prüfen** angezeigt.
-4. Unter **Benutzer** dem normalen HA-Konto von Paul diese Rolle zuordnen und speichern. Ein Konto mit Administratorrechten kann nicht eingeschränkt werden.
+4. Unter **Benutzer** beim normalen HA-Konto von Paul **Family Access einschalten**, diese Rolle zuordnen und speichern. Ein Konto mit Administratorrechten kann nicht eingeschränkt werden.
 5. Mit diesem Konto in einem separaten Browserfenster anmelden. Unter **Family Access → Prüfen** muss das Anzeigen des Testschalters funktionieren und das Umschalten abgelehnt werden.
 6. Als Administrator die Gerätefreigabe des Testschalters auf **Bedienen** ändern. Danach muss das Umschalten über **Family Access** funktionieren. Der virtuelle Schalter betätigt keine echte Hardware.
 7. Optional unter **Benutzer → Prüfversion aktivieren** die Prüfung der Dashboard-Konfigurationen einschalten. Ein nicht freigegebenes Dashboard muss bei einer neuen Konfigurationsabfrage abgelehnt werden.
@@ -58,7 +64,7 @@ Es werden keine Ports, Netzwerkeinstellungen, HA-Gruppen oder vorhandenen Tokens
 
 ## Bedeutung der Rechte
 
-| Auswahl | Wirkung in 0.2.0 |
+| Auswahl | Wirkung in 0.3.0 |
 |---|---|
 | Dashboard: Anzeigen | Konfiguration über die eigene API abrufen; bei eingeschalteter Dashboard-Sperre auch native Konfigurationsabfragen zulassen. |
 | Dashboard: Bedienen | Schließt Anzeigen ein; tatsächliche Bedienung braucht zusätzlich eine Gerätefreigabe. |
@@ -71,7 +77,7 @@ Gerätebedienung ist zunächst nur für den virtuellen Testschalter eingeschalte
 
 Freigaben aus mehreren Quellen werden addiert; die höhere Freigabe gilt. **Kein Zugriff** entfernt einen Eintrag, ist aber kein ausdrückliches Verbot gegenüber einer zusätzlichen Bereichs- oder Labelfreigabe. Labels werden bei jeder Anfrage anhand der aktuellen Entitäts- und Gerätezuordnung ausgewertet. Bereiche werden direkt von der Entität oder ersatzweise vom Gerät übernommen. Neue entsprechend zugeordnete Entitäten erhalten damit automatisch die Freigabe. Labels auf anderen Objekttypen werden nicht geerbt.
 
-**Nicht verwaltet** entfernt die Benutzerzuordnung und lässt den nativen Dashboardzugriff unverändert. **Kein Zugriff** im Benutzerfeld speichert dagegen ausdrücklich eine leere Rollenzuordnung: Bei eingeschalteter Dashboard-Sperre darf dieses Konto keine Dashboard-Konfiguration abrufen. Ohne Zuweisung verweigert die eigene Family-Access-API normalen Benutzern Geräte- und Dashboardoperationen.
+**Family Access aus** deaktiviert die Anwendung der Rolle für dieses Konto und lässt den nativen Dashboardzugriff unverändert. Die Rollenzuordnung bleibt gespeichert. **Kein Zugriff** im Rollenfeld speichert eine leere Rollenzuordnung: Bei aktiviertem Family Access und eingeschalteter Dashboard-Sperre darf dieses Konto keine Dashboard-Konfiguration abrufen. Ohne Aktivierung und Freigabe verweigert die eigene Family-Access-API normalen Benutzern Geräte- und Dashboardoperationen.
 
 Die Berechtigung für eine Entität gilt innerhalb dieser API auf allen Dashboards gleich. Der aktuelle Dashboardpfad oder ein `Referer` kann keine Geräteberechtigung erweitern.
 

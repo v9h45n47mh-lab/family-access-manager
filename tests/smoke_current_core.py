@@ -58,6 +58,7 @@ async def main():
             from custom_components.family_access_manager.policy import Policy
             policy = deepcopy(runtime.policy.config)
             policy["bindings"][child.id] = ["family"]
+            policy["enabled_users"] = [child.id]
             policy["roles"]["family"]["entities"][runtime.probe_entity_id] = "view"
             runtime.policy = Policy(policy)
             refresh = await hass.auth.async_create_refresh_token(child, client_id="https://example.com")
@@ -108,6 +109,29 @@ async def main():
                     denied = await ws.receive_json()
                     assert not denied["success"] and denied["error"]["code"] == "unauthorized"
                     results["checks"]["native_dashboard_gate_on_existing_connection"] = True
+                    owner_refresh = await hass.auth.async_create_refresh_token(owner, client_id="https://example.com")
+                    owner_headers = {"Authorization": "Bearer " + hass.auth.async_create_access_token(owner_refresh)}
+                    disabled = deepcopy(runtime.policy.config)
+                    disabled["enabled_users"] = []
+                    async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action": "save_policy", "payload": disabled}) as response:
+                        assert response.status == 200, await response.text()
+                    await ws.send_json({"id": 3, "type": "family_access_manager/request", "action": "status"})
+                    disabled_status = (await ws.receive_json())["result"]
+                    assert not disabled_status["managed"] and disabled_status["roles"] == []
+                    assert runtime.policy.config["bindings"][child.id] == ["family"]
+                    async with session.post(base + "/api/family_access_manager/request", headers=headers, json={"action": "read_entity", "payload": {"entity_id": runtime.probe_entity_id}}) as response:
+                        assert response.status == 403
+                    results["checks"]["disabled_user_keeps_role_without_own_api_grants"] = True
+                    enabled = deepcopy(runtime.policy.config)
+                    enabled["enabled_users"] = [child.id]
+                    async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action": "save_policy", "payload": enabled}) as response:
+                        assert response.status == 200, await response.text()
+                    await ws.send_json({"id": 4, "type": "family_access_manager/request", "action": "status"})
+                    assert (await ws.receive_json())["result"]["managed"]
+                    await ws.send_json({"id": 5, "type": "lovelace/config"})
+                    denied = await ws.receive_json()
+                    assert not denied["success"] and denied["error"]["code"] == "unauthorized"
+                    results["checks"]["per_user_activation_on_existing_connection"] = True
             # Inspect the installed official adapter without importing unrelated
             # Alexa/camera dependencies. This is NOT a live relay test.
             cloud_source = (Path(homeassistant.__file__).parent / "components/cloud/client.py").read_text()
@@ -129,6 +153,7 @@ async def main():
             reloaded = hass.data["family_access_manager"]
             assert reloaded.policy.config["native_dashboard_gate"]
             assert reloaded.policy.config["bindings"][child.id] == ["family"]
+            assert reloaded.policy.config["enabled_users"] == [child.id]
             assert reloaded.gate.available
             results["checks"]["policy_persists_across_reload"] = True
             assert await hass.config_entries.async_unload(entry.entry_id)

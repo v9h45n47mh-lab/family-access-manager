@@ -2,7 +2,7 @@ name: Validate prototype
 
 on:
   push:
-    branches: [main, "ui-kit-*"]
+    branches: [main, "ui-kit-*", "feature/*"]
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -81,5 +81,5 @@ jobs:
           if gh release view "v$version" > /dev/null 2>&1; then
             echo "Release already exists; leaving it unchanged."
           else
-            gh release create "v$version" dist/*.zip dist/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title "Family Access Manager $version – HA UI Kit 1.2.1" --notes-file docs/RELEASE_0.2.0.md
+            gh release create "v$version" dist/*.zip dist/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title "Family Access Manager $version" --notes-file "docs/RELEASE_$version.md"
           fi

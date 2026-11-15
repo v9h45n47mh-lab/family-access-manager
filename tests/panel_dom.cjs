@@ -7,10 +7,11 @@ vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family
 vm.runInContext('const esc=escapeHtml;',context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family_access_manager/frontend/panel.js'),'utf8').replace(/^import[^\n]*\n/,''),context);
 const panel=window.document.querySelector('family-access-panel');
-const policy={revision:0,native_dashboard_gate:false,device_control:false,roles:{family:{name:'Kinder',dashboards:{'dashboard-paul':'view'},entities:{},areas:{},labels:{}}},bindings:{paul:['family']}};
-const status={is_admin:true,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'0.1.0',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
+const policy={revision:0,native_dashboard_gate:false,device_control:false,roles:{family:{name:'Kinder',dashboards:{'dashboard-paul':'view'},entities:{},areas:{},labels:{}}},bindings:{paul:['family']},enabled_users:['paul']};
+const status={is_admin:true,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'0.3.0',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
 const snapshot={policy,users:[{id:'manuel',name:'Manuel',admin:true,active:true},{id:'paul',name:'Paul',admin:false,active:true}],dashboards:[{id:'dashboard-paul',name:'Paul'}],entities:[{id:'switch.probe',name:'Testschalter'},{id:'light.paul',name:'<img src=x onerror=alert(1)>'}],areas:[],labels:[],events:[]};
 let saves=0;
+snapshot.users.push({id:'test',name:'Testuser',admin:false,active:true});
 const settle=()=>new Promise(setImmediate);
 const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);assert(el,selector);el.click();};
 (async()=>{
@@ -22,6 +23,20 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   },callApi:async()=>({result:status})};
   await settle();
   assert(panel.shadowRoot.innerHTML.includes('Benutzer'));
+  const activate='button[data-action="user-activation"][data-user="test"]';
+  assert.equal(panel.shadowRoot.querySelector(activate).getAttribute('aria-checked'),'false');
+  assert.equal(panel.shadowRoot.querySelector('button[data-action="user-activation"][data-user="manuel"]'),null);
+  const role=panel.shadowRoot.querySelector('select[data-user="test"]');
+  for(const option of role.querySelectorAll('option'))option.selected=option.value==='family';
+  role.dispatchEvent(new window.Event('change',{bubbles:true}));
+  assert(!panel.policy.enabled_users.includes('test'),'Preparing a role must not activate the user');
+  click(activate);
+  assert(panel.policy.enabled_users.includes('test'));
+  assert.equal(panel.shadowRoot.querySelector(activate).getAttribute('aria-checked'),'true');
+  click(activate);
+  assert(!panel.policy.enabled_users.includes('test'));
+  assert.equal(panel.policy.bindings.test[0],'family','Switching off retains the selected role');
+  click(activate);
   click('[data-action="navigate"][data-page="roles"]');
   assert.equal(panel.shadowRoot.querySelectorAll('img').length,0,'Entity names must be escaped');
   const select=panel.shadowRoot.querySelector('[data-grant="switch.probe"]');
@@ -32,11 +47,12 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   click('[data-action="save"]');await settle();
   assert.equal(saves,1);
   assert.equal(snapshot.policy.roles.family.entities['switch.probe'],'control');
+  assert(snapshot.policy.enabled_users.includes('test'),'Activation must be included in saved configuration');
   click('[data-action="navigate"][data-page="test"]');click('[data-action="api-check"]');await settle();
   assert(panel.shadowRoot.innerHTML.includes('Dieselbe Prüfinstanz erreicht'));
   status.is_admin=false;
   panel.hass={user:{id:'paul'},callWS:async msg=>structuredClone(status)};await settle();
   assert.equal(panel.shadowRoot.querySelector('[data-action="navigate"][data-page="users"]'),null);
   assert.equal(panel.shadowRoot.querySelector('[data-action="save"]'),null);
-  console.log(JSON.stringify({admin_view:true,role_save:true,html_escaping:true,transport_check:true,child_admin_controls_hidden:true,browser_layout_verified:false}));
+  console.log(JSON.stringify({admin_view:true,role_save:true,html_escaping:true,transport_check:true,child_admin_controls_hidden:true,user_activation:true,browser_layout_verified:false}));
 })().catch(err=>{console.error(err);process.exitCode=1});

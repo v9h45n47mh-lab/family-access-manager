@@ -12,7 +12,7 @@ ROOT_FILES = {
 }
 DIRECTORIES = {"custom_components", "docs", "tests", "scripts", ".github"}
 EXCLUDED = {"__pycache__", ".pytest_cache", "node_modules", ".git", ".venv", "dist"}
-EXTENSIONS = {".py", ".js", ".cjs", ".json", ".toml", ".txt", ".md", ".yml", ".yaml", ".png", ".svg"}
+EXTENSIONS = {".py", ".js", ".cjs", ".css", ".json", ".toml", ".txt", ".md", ".yml", ".yaml", ".png", ".svg"}
 
 
 def files():
