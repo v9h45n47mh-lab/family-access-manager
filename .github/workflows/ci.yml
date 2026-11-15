@@ -1,4 +1,4 @@
-name: Validate prototype
+name: Validate Family Access Manager
 
 on:
   push:

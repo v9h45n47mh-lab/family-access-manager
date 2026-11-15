@@ -19,6 +19,7 @@ class FamilyAccessPanel extends HTMLElement {
   }
   connectedCallback() {
     this.unbind ||= bindUI(this.shadowRoot, event => {
+      if (event.action === 'close-modal') { this.closeModal();return; }
       if (event.action === 'navigate') { this.tab=event.data.page==='settings'?'scope':event.data.page; this.render(); return; }
       if (event.action === 'dashboard-grant') {
         const role=this.policy.roles[this.roleId],path=event.data.path;
@@ -140,7 +141,14 @@ class FamilyAccessPanel extends HTMLElement {
       if(action === "close-modal"){this.closeModal();return;}
       if(action === "delete-role") {
         if(Object.values(this.policy.bindings).some(r=>r.includes(this.roleId))) throw Error("Diese Rolle ist noch einem Benutzer zugewiesen.");
-        delete this.policy.roles[this.roleId]; this.roleId=Object.keys(this.policy.roles)[0] || ""; this.dirty=true; this.render(); return;
+        this.deletingRole=this.roleId;
+        this.shadowRoot.getElementById('modal-host').innerHTML=confirmDialog({id:'delete-role-dialog',title:'Rolle löschen?',message:'Die Rolle „'+this.policy.roles[this.roleId].name+'“ löschen? Die Änderung wird erst beim Speichern übernommen.',confirmLabel:'Rolle löschen',confirmAction:'confirm-delete-role',cancelAction:'close-modal',danger:true});
+        this.shadowRoot.getElementById('delete-role-dialog').showModal();return;
+      }
+      if(action === "confirm-delete-role") {
+        const id=this.deletingRole;if(!id||!this.policy.roles[id])throw Error('Diese Rolle ist nicht mehr vorhanden.');
+        if(Object.values(this.policy.bindings).some(r=>r.includes(id)))throw Error('Diese Rolle ist noch einem Benutzer zugewiesen.');
+        delete this.policy.roles[id];this.deletingRole=null;this.closeModal();this.roleId=Object.keys(this.policy.roles)[0]||'';this.dirty=true;this.render();return;
       }
       if(action === "refresh-errors") {
         control.disabled=true;
@@ -192,7 +200,7 @@ class FamilyAccessPanel extends HTMLElement {
     this.shadowRoot.getElementById('modal-host').innerHTML=dialog({id,title,content:'<div id="modal-error"></div>'+content,actions:button({label:'Abbrechen',action:'close-modal'})+actions});
     this.shadowRoot.getElementById(id).showModal();
   }
-  closeModal(){this.shadowRoot.querySelector('#modal-host dialog[open]')?.close();}
+  closeModal(){this.shadowRoot.querySelector('#modal-host dialog[open]')?.close();this.deletingRole=null;}
   checkedValues(id){return [...this.shadowRoot.getElementById(id).querySelectorAll('input[type="checkbox"]:checked')].map(el=>el.value);}
   orderedDashboards(){
     const role=this.policy.roles[this.roleId],byId=new Map(this.snapshot.dashboards.map(d=>[d.id,d]));
@@ -239,10 +247,10 @@ class FamilyAccessPanel extends HTMLElement {
   scopeContent() {
     const facts=[['Dashboardfreigaben','Rollen und Benutzeraktivierung'],['Seitenleiste',this.status.sidebar_filter?'Nach Rollen gefiltert':this.status.sidebar_available?'Für aktivierte Benutzer gefiltert':'Nicht verfügbar'],['Native Dashboard-Konfigurationen',this.status.native_dashboard_gate&&this.status.gate_available?'Sperre eingeschaltet':'Sperre ausgeschaltet'],['Geräte- und Systemrechte','Durch Home Assistant verwaltet'],['Nabu Casa auf deiner Instanz','Vor Ort zu prüfen']];
     return section({id:'activation',title:'Zugriffsschutz',content:row({title:'Dashboard-Konfigurationen sperren',description:'Blockiert nicht freigegebene Dashboard-Konfigurationen für aktivierte Benutzer.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',iconOnly:true,checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})})
+      +section({id:'versions',title:'Versionen',content:versionInfo({frontend:'1.0.1',backend:this.status.version,ui:UI_VERSION})})
       +section({id:'diagnosis',title:'Diagnose',expanded:Boolean(this.output),content:this.testContent()})
       +section({id:'scope',title:'Hinweise',expanded:false,content:facts.map(([title,description])=>row({title,description})).join('')
-      +helpContent({content:'<p>Family Access verwaltet Dashboardzugriff und Navigation. Freigegebene Dashboards benötigen keine zusätzlichen Gerätefreigaben. Vorhandene HA-Benutzerrechte, Gruppen, Tokens und Netzwerkeinstellungen bleiben bestehen.</p><p>Die zusätzliche Dashboard-Sperre schützt neue Konfigurationsanfragen. Bereits geladene Inhalte lassen sich nicht zurückholen. Profil und feste Konto-/Benachrichtigungselemente bleiben erreichbar. Beim Entfernen der Integration entfällt die Filterung.</p>'})
-      +versionInfo({frontend:'1.0.0',backend:this.status.version,ui:UI_VERSION})})
+      +helpContent({content:'<p>Family Access verwaltet Dashboardzugriff und Navigation. Freigegebene Dashboards benötigen keine zusätzlichen Gerätefreigaben. Vorhandene HA-Benutzerrechte, Gruppen, Tokens und Netzwerkeinstellungen bleiben bestehen.</p><p>Die zusätzliche Dashboard-Sperre schützt neue Konfigurationsanfragen. Bereits geladene Inhalte lassen sich nicht zurückholen. Profil und feste Konto-/Benachrichtigungselemente bleiben erreichbar. Beim Entfernen der Integration entfällt die Filterung.</p>'})})
       +(this.snapshot?section({id:'audit',title:'Letzte Zugriffsprüfungen',expanded:false,content:this.snapshot.events.slice(0,30).map(ev=>row({title:ev.operation,description:ev.target+' · '+new Date(ev.time).toLocaleString('de-DE'),trailing:statusBadge({label:ev.allowed?'Erlaubt':'Abgelehnt',state:ev.allowed?'success':'error',icon:ev.allowed?'success':'failure'})})).join('')||emptyState('Noch keine Prüfungen. Nach einem Test neu laden.')}):'');
   }
   render() {

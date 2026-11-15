@@ -3,11 +3,12 @@ const root=path.resolve(__dirname,'..'),frontend='/custom_components/family_acce
 const fixture=`<!doctype html><html lang="de"><head><meta charset="utf-8"><style>body{margin:0;--primary-color:#03a9f4;--primary-text-color:#212121;--secondary-text-color:#727272;--card-background-color:#fff;--ha-card-background:#fff;--primary-background-color:#fafafa;--secondary-background-color:#f5f5f5;--divider-color:#e0e0e0;--ha-font-family-body:Arial,sans-serif;background:var(--primary-background-color)}body.dark{--primary-text-color:#e1e1e1;--secondary-text-color:#9b9b9b;--card-background-color:#1c1c1c;--ha-card-background:#1c1c1c;--primary-background-color:#111;--secondary-background-color:#282828;--divider-color:#424242}</style></head><body><script type="module">
 import '${frontend}panel.js';
 const policy={revision:0,native_dashboard_gate:false,device_control:false,roles:{family:{name:'Maximilian',dashboard_order:[],dashboards:{'dashboard-paul':'view'},entities:{'switch.probe':'view'},areas:{},labels:{}}},bindings:{paul:['family'],test:['family']},enabled_users:['paul','test']};
+policy.roles.unused={name:'Unbenutzte Rolle',dashboard_order:[],dashboards:{},entities:{},areas:{},labels:{}};
 const snapshot={policy,users:[{id:'manuel',name:'Manuel',admin:true,active:true},{id:'paul',name:'Paul',admin:false,active:true},{id:'max',name:'Maximilian',admin:false,active:true},{id:'vera',name:'Vera',admin:true,active:true},{id:'test',name:'Test',admin:false,active:true}],dashboards:[{id:'dashboard-paul',name:'Paul'},{id:'dashboard-parents',name:'Eltern'}],entities:[{id:'switch.probe',name:'Testschalter'},{id:'light.paul',name:'Licht Paul'},{id:'light.very_long_entity_name_for_testing',name:'LangeEntitätsbezeichnungOhneLeerzeichenDieAufDemHandyUmgebrochenWerdenMuss'},{id:'light.escape',name:'<img src=x onerror=alert(1)>'}],areas:[{id:'paul',name:'Paul'}],labels:[{id:'paul',name:'Paul'}],events:[{operation:'entity/view',target:'switch.probe',allowed:true,time:'2026-11-10T10:00:00Z'}]};
 snapshot.dashboards.push({id:'dashboard-long-name',name:'LangeDashboardbezeichnungOhneLeerzeichenDieAufDemHandyUmgebrochenWerdenMuss'},{id:'dashboard-unsafe',name:'<img src=x onerror=alert(1)>'});
 snapshot.error_log=[{time:'2026-11-15T10:00:00Z',user_id:'paul',user_name:'Paul',operation:'read_dashboard',target:'dashboard-parents',reason:'Die Rolle enthält keine Freigabe für dieses Dashboard.',source:'websocket',kind:'denied'}];
 snapshot.error_log.push({...snapshot.error_log[0],user_name:'<img src=x onerror=alert(1)>',reason:'<img src=x onerror=alert(1)> Lange Diagnose für einen sicheren Umbruch auf Mobilgeräten'});
-const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.0.0',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
+const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.0.1',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
 window.fixture={snapshot,status,saves:[],calls:[],state:'off'};
 const hass={user:{id:'manuel'},callWS:async msg=>{window.fixture.calls.push(msg.action);if(msg.action==='admin_panel_status'){if(!status.is_admin)throw Object.assign(new Error('Nur Administratoren'),{code:'unauthorized'});return structuredClone(status);}if(msg.action==='status')return structuredClone(status);if(msg.action==='admin_snapshot'){if(!status.is_admin)throw Error('Nicht freigegeben');return structuredClone(snapshot);}if(msg.action==='admin_sidebar')return {user_id:msg.payload.user_id,token:'fixture-token',visible_dashboards:snapshot.dashboards.map(d=>d.id),default_panel:'dashboard-paul'};if(msg.action==='save_admin_sidebar'){window.fixture.adminSave=structuredClone(msg.payload);return msg.payload;}if(msg.action==='apply_dashboard_order'){window.fixture.orderApply=structuredClone(msg.payload);return {applied:msg.payload.user_ids,failed:[]};}if(msg.action==='save_policy'){if(!status.is_admin)throw Error('Nicht freigegeben');snapshot.policy=structuredClone(msg.payload);snapshot.policy.revision++;window.fixture.saves.push(structuredClone(msg.payload));for(const u of snapshot.users.filter(u=>u.admin)){delete snapshot.policy.bindings[u.id];snapshot.policy.enabled_users=snapshot.policy.enabled_users.filter(id=>id!==u.id);}return {revision:snapshot.policy.revision,policy:structuredClone(snapshot.policy)};}if(msg.action==='read_entity')return {state:window.fixture.state};if(msg.action==='call_service'){if(!status.is_admin)throw Error('Nicht freigegeben');window.fixture.state=window.fixture.state==='off'?'on':'off';return {executed:true};}if(msg.action==='admin_error_log'){if(!status.is_admin)throw Error('Nicht freigegeben');return {events:structuredClone(snapshot.error_log),limit:200};}if(msg.action==='read_dashboard'){if(!status.is_admin)throw Error('Nicht freigegeben');return {views:[]};}throw Error('Unknown action');},callApi:async()=>({result:structuredClone(status)})};
 window.fixture.hass=hass;const app=document.createElement('family-access-panel');document.body.append(app);app.hass=hass;window.app=app;
@@ -95,9 +96,10 @@ const server=http.createServer((req,res)=>{
     await page.setViewportSize({width,height:1000});await page.evaluate(dark=>document.body.classList.toggle('dark',dark),theme==='dark');
     await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();
     await app.getByRole('button',{name:'Rolle umbenennen',exact:true}).click();
-    for(const [kind,title] of [['rename','Rolle umbenennen'],['order','Reihenfolge übernehmen'],['admin','Dashboards für Manuel']]){
+    for(const [kind,title] of [['rename','Rolle umbenennen'],['order','Reihenfolge übernehmen'],['admin','Dashboards für Manuel'],['delete','Rolle löschen?']]){
       if(kind==='order')await app.getByRole('button',{name:'Reihenfolge übernehmen',exact:true}).click();
       if(kind==='admin'){await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).click();await app.getByRole('button',{name:'Dashboards für Manuel',exact:true}).click();}
+      if(kind==='delete'){await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();await app.getByRole('combobox',{name:'Rolle',exact:true}).selectOption('unused');await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();}
       const modal=app.getByRole('dialog',{name:title,exact:true});await modal.waitFor();
       const overflow=await modal.evaluate(el=>[el,...el.querySelectorAll('.modal-body,.modal-head,footer,.fui-selection-list,.cover-option')].filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>n.className));
       assert.deepEqual(overflow,[],'Dialog overflow '+[kind,width,theme]);
@@ -105,6 +107,7 @@ const server=http.createServer((req,res)=>{
       assert.equal(style.fontSize,'14px');assert.equal(style.padding,'0px');
       if(width===390&&theme==='light')await modal.screenshot({path:path.join(root,'test-results',kind+'-dialog-390-light.png')});
       await page.keyboard.press('Escape');assert.equal(await modal.isVisible(),false);
+      if(kind==='delete'){assert.equal(await page.evaluate(()=>window.app.policy.roles.unused.name),'Unbenutzte Rolle','Escape does not delete');await app.getByRole('combobox',{name:'Rolle',exact:true}).selectOption('family');}
       results.push({width,theme,page:kind+'-dialog',matched:3});
     }
   }
@@ -133,6 +136,20 @@ const server=http.createServer((req,res)=>{
   await adminModal.getByRole('combobox',{name:'Startseite',exact:true}).selectOption('dashboard-parents');
   await adminModal.getByRole('button',{name:'Seitenleiste speichern',exact:true}).click();
   await app.getByRole('status').filter({hasText:'Admin-Seitenleiste gespeichert'}).waitFor();
+  await app.locator('.card-top').getByRole('button',{name:'Einstellungen',exact:true}).click();
+  assert.equal(await app.locator('#versions-content').isVisible(),true);
+  assert((await app.locator('#versions-content').textContent()).includes('Oberfläche 1.0.1'));
+  assert((await app.locator('#versions-content').textContent()).includes('Integration 1.0.1'));
+  assert((await app.locator('#versions-content').textContent()).includes('UI 1.6.0'));
+  await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();
+  await app.getByRole('combobox',{name:'Rolle',exact:true}).selectOption('unused');
+  await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();
+  await app.getByRole('dialog',{name:'Rolle löschen?',exact:true}).getByRole('button',{name:'Abbrechen',exact:true}).click();
+  assert.equal(await page.evaluate(()=>Boolean(window.app.policy.roles.unused)),true);
+  await app.getByRole('button',{name:'Rolle entfernen',exact:true}).click();
+  await app.getByRole('dialog',{name:'Rolle löschen?',exact:true}).getByRole('button',{name:'Rolle löschen',exact:true}).click();
+  assert.equal(await page.evaluate(()=>Boolean(window.app.policy.roles.unused)),false);
+  assert.equal(await page.evaluate(()=>Boolean(window.app.policy.roles.family)),true);
   assert.equal(await page.evaluate(()=>window.fixture.adminSave.user_id),'manuel');
   assert.equal(await page.evaluate(()=>window.fixture.adminSave.visible_dashboards.includes('dashboard-paul')),false);
   assert.equal(await page.evaluate(()=>window.fixture.adminSave.default_panel),'dashboard-parents');
@@ -144,7 +161,7 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.evaluate(()=>window.app.snapshot),null);
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(root,'test-results/validation.json'),JSON.stringify({ui:'1.6.0',variants:results,actions:['user_activation','user_assignment','controlled_switch','permission_save','search','escaping','native_dialog_escape','cancel_and_focus','http_ws_check','dashboard_read','admin_error_protocol','restricted_panel_denied'],consoleErrors:errors},null,2));
   console.log(JSON.stringify({variants:results.length,themes:2,widths:[1100,430,390,375,320],behavior:'passed'}));
-  if(process.env.CI)for(const name of ['users-1100-light.png','users-390-dark.png','roles-1100-dark.png','roles-390-light.png','admin-dialog-390-light.png','order-dialog-390-light.png']){
+  if(process.env.CI)for(const name of ['users-1100-light.png','users-390-dark.png','roles-1100-dark.png','roles-390-light.png','admin-dialog-390-light.png','order-dialog-390-light.png','delete-dialog-390-light.png']){
     const encoded=fs.readFileSync(path.join(root,'test-results',name)).toString('base64'),size=16000,count=Math.ceil(encoded.length/size);
     console.log('FAM_VISUAL_META '+JSON.stringify({name,chunks:count,length:encoded.length}));
     for(let i=0;i<count;i++)console.log('FAM_VISUAL_DATA '+name+' '+i+' '+encoded.slice(i*size,(i+1)*size));

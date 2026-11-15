@@ -1,6 +1,13 @@
 {
   "config": {
-    "step": {"user": {"title": "Family Access Manager einrichten", "description": "Die Prüfversion ergänzt eine zentrale Rechteverwaltung und geschützte Testfunktionen. Bestehende Benutzerrechte werden bei der Einrichtung nicht verändert. Die optionale Dashboard-Sperre wird später im Menü aktiviert. Allgemeine HA-Geräte-APIs sind noch nicht abgesichert."}},
-    "abort": {"already_configured": "Family Access Manager ist bereits eingerichtet."}
+    "step": {
+      "user": {
+        "title": "Family Access Manager einrichten",
+        "description": "Family Access verwaltet Rollen, Dashboardfreigaben und die Seitenleiste je Benutzer. Administratoren behalten Vollzugriff. Vorhandene Home-Assistant-Rechte bleiben bestehen. Die optionale Dashboard-Sperre aktivierst du in den Einstellungen. Geräte- und Systemrechte werden von Home Assistant verwaltet."
+      }
+    },
+    "abort": {
+      "already_configured": "Family Access Manager ist bereits eingerichtet."
+    }
   }
 }

@@ -1,4 +1,4 @@
-# Family Access Manager 1.0.0
+# Family Access Manager 1.0.1
 
 Benutzerrollen und Dashboardfreigaben für Home Assistant. Die Oberfläche verwendet vollständig das lokal eingebundene **HA UI Kit 1.6.0**.
 
@@ -10,11 +10,25 @@ Family Access ist eine reine Verwaltungsoberfläche für Administratoren und Eig
 2. Unter **Benutzer** das Konto aktivieren, die Rolle wählen und **Änderungen speichern**.
 3. Die Seitenleiste zeigt diesem Konto nur freigegebene Dashboards sowie die eigenen Konto-/internen Routen. Allgemeine Panels wie Verlauf, Kalender und Medien werden ausgeblendet; das feste Konto- und Benachrichtigungsmenü bleibt bestehen.
 4. Für direkte Dashboard-Konfigurationsanfragen unter **Einstellungen → Dashboard-Konfigurationen sperren** die Sperre einschalten und speichern.
-5. Mit einem separaten Testkonto prüfen. Nach einem Update Home Assistant neu starten und den Browser vollständig neu laden.
+5. Mit einem separaten Benutzerkonto prüfen. Nach einem Update Home Assistant neu starten und den Browser vollständig neu laden.
 
 Eine Rolle lässt sich vorbereiten, ohne das Konto zu aktivieren. Beim Ausschalten bleibt die Rolle gespeichert und die normale HA-Navigation wird wiederhergestellt. Administratoren und Eigentümer behalten Vollzugriff.
 
 Gerätefreigaben sind für diesen Ablauf nicht erforderlich und werden nicht mehr angeboten. Die Bedienung in freigegebenen Dashboards folgt den nativen HA-Rechten. Vorhandene Anzeigen-/Bedienen-/Bearbeiten-Zuordnungen erscheinen als freigegeben und bleiben bis zu einer Änderung gespeichert; es wird damit kein eigener schreibgeschützter HA-Modus oder Administratorzugriff vergeben.
+
+## Rollen löschen und Versionen
+
+Das Stiftsymbol benennt eine Rolle um. Das Papierkorbsymbol öffnet zuerst **Rolle löschen?**. **Abbrechen**, Schließen oder Escape erhalten die Rolle. Erst **Rolle löschen** entfernt sie aus dem Entwurf; **Änderungen speichern** übernimmt den Entwurf dauerhaft. Zugewiesene Rollen können weiterhin nicht gelöscht werden.
+
+Unter **Einstellungen → Versionen** stehen Oberfläche, Integration und HA UI Kit in einem eigenen sichtbaren Bereich. Die veröffentlichte Version ist ein reguläres Release ohne Beta-/Prüfversionskennzeichnung.
+
+## Dashboardauswahl im HA-Profil
+
+Bei aktivierten Family-Access-Benutzern wird auch **Profil → Erscheinungsbild → Dashboard** nach den Freigaben ihrer Rolle gefiltert. Diese Liste wird separat von der Seitenleiste geladen. Nicht freigegebene oder ausschließlich Administratoren vorbehaltene Dashboards erscheinen dort nicht. Nicht aktivierte Konten und Administratoren behalten die native HA-Auswahl. Die HA-Option **Auto (Systemeinstellungen verwenden)** bleibt bestehen.
+
+Die Filterung wirkt auf neue Anfragen. Eine bereits geöffnete Profilansicht nach Änderungen neu öffnen; nach dem Update HA neu starten und den Browser vollständig neu laden. Für Paul muss Family Access aktiviert und die gewünschte Rolle zugewiesen sein.
+
+Die persönliche Startseite wird im nativen HA-Profil gespeichert. Andere Profileinstellungen bleiben erhalten.
 
 ## Reihenfolge und Admin-Seitenleiste
 
@@ -51,17 +65,17 @@ Fehler vor der Anmeldung oder beim Laden einer anderen Integration gehören in d
 
 ### Marketplace / HACS
 
-Das Repository `https://github.com/v9h45n47mh-lab/family-access-manager` als benutzerdefiniertes Repository der Kategorie **Integration** hinzufügen. Die reguläre Version **1.0.0** installieren und HA neu starten. Dafür müssen keine Vorabversionen eingeblendet werden. Anschließend unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
+Das Repository `https://github.com/v9h45n47mh-lab/family-access-manager` als benutzerdefiniertes Repository der Kategorie **Integration** hinzufügen. Die reguläre Version **1.0.1** installieren und HA neu starten. Dafür müssen keine Vorabversionen eingeblendet werden. Anschließend unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** den **Family Access Manager** einrichten.
 
 Die Quelle ist als benutzerdefiniertes Repository nutzbar; sie wird nicht automatisch Teil des offiziellen Katalogs.
 
 ### Manuell
 
-Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.0.0.zip`.
+Das [GitHub-Release](https://github.com/v9h45n47mh-lab/family-access-manager/releases) enthält `family_access_manager.zip`. Den Ordner `custom_components/family_access_manager` nach `/config/custom_components/family_access_manager` kopieren und HA neu starten. Das vollständige Quellpaket heißt `Family_Access_Manager_1.0.1.zip`.
 
 ### Falls HACS noch einen Commit-Hash anzeigt
 
-In HACS beim **Family Access Manager** die Repositoryinformationen neu laden und die reguläre Version **1.0.0** installieren. Bis zu dieser Installation kann die bisher installierte Version weiterhin als Commit-Hash erscheinen. Danach HA neu starten und den Browser vollständig neu laden. Falls bisher ausdrücklich der Entwicklungszweig `main` gewählt war, beim erneuten Herunterladen **1.0.0** wählen.
+In HACS beim **Family Access Manager** die Repositoryinformationen neu laden und die reguläre Version **1.0.1** installieren. Bis zu dieser Installation kann die bisher installierte Version weiterhin als Commit-Hash erscheinen. Danach HA neu starten und den Browser vollständig neu laden. Falls bisher ausdrücklich der Entwicklungszweig `main` gewählt war, beim erneuten Herunterladen **1.0.1** wählen.
 
 Der GitHub-Endpunkt `releases/latest` liefert jetzt die reguläre Version. Künftige reguläre Releases werden automatisch ohne Vorabversionsmarkierung und als neueste Version veröffentlicht; Beta-/RC-Versionen bleiben im Vorabkanal.
 

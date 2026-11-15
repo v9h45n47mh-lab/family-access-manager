@@ -62,6 +62,9 @@ class _PanelConnection:
 
 
 class SidebarFilter:
+    command = "get_panels"
+    connection_type = _PanelConnection
+
     def __init__(self, runtime):
         self.runtime = runtime
         self.registry = None
@@ -70,10 +73,10 @@ class SidebarFilter:
 
     @property
     def available(self):
-        return self.registry is not None and self.registry.get("get_panels", (None,))[0] is self.wrapper
+        return self.registry is not None and self.registry.get(self.command, (None,))[0] is self.wrapper
 
     def install(self, registry):
-        original = registry.get("get_panels")
+        original = registry.get(self.command)
         if not isinstance(original, tuple) or len(original) != 2:
             return False
         handler, schema = original
@@ -82,13 +85,39 @@ class SidebarFilter:
         def filtered(hass, connection, msg):
             if not self.runtime.policy.managed(principal(connection.user)):
                 return handler(hass, connection, msg)
-            return handler(hass, _PanelConnection(connection, self.runtime, msg["id"]), msg)
+            return handler(hass, self.connection_type(connection, self.runtime, msg["id"]), msg)
 
         self.registry, self.original, self.wrapper = registry, original, filtered
-        registry["get_panels"] = (filtered, schema)
+        registry[self.command] = (filtered, schema)
         return True
 
     def uninstall(self):
         if self.available:
-            self.registry["get_panels"] = self.original
+            self.registry[self.command] = self.original
         self.registry = self.original = self.wrapper = None
+
+
+def visible_dashboards(policy, user, dashboards):
+    """HA's profile picker fetches this catalog independently of get_panels."""
+    if not policy.managed(user):
+        return dashboards
+    return [dashboard for dashboard in dashboards
+            if isinstance(dashboard, dict)
+            and isinstance(dashboard.get("url_path"), str)
+            and dashboard["url_path"] != PANEL_PATH
+            and not dashboard.get("require_admin", False)
+            and policy.dashboard(user, dashboard["url_path"])]
+
+
+class _DashboardConnection(_PanelConnection):
+    def _filter(self, dashboards):
+        if type(dashboards) is not list:
+            raise ValueError("Home Assistant hat keine gültige Dashboardliste geliefert.")
+        return visible_dashboards(self._runtime.policy, principal(self.user), dashboards)
+
+
+class DashboardListFilter(SidebarFilter):
+    """Keep the native profile dashboard picker within the user's grants."""
+
+    command = "lovelace/dashboards/list"
+    connection_type = _DashboardConnection

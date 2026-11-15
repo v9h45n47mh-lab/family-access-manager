@@ -13,6 +13,7 @@ import logging
 from pathlib import Path
 import socket
 import tempfile
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import homeassistant  # Must precede libraries importing the pre-2026.11 httpx.
@@ -20,6 +21,7 @@ from aiohttp import ClientSession
 from homeassistant import bootstrap, loader
 from homeassistant.auth.const import GROUP_ID_ADMIN, GROUP_ID_USER
 from homeassistant.components import frontend, websocket_api
+from homeassistant.components.lovelace.const import LOVELACE_DATA
 from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
 
@@ -55,9 +57,12 @@ async def main():
             runtime = hass.data["family_access_manager"]
             assert runtime.probe_entity_id and runtime.gate.available
             assert runtime.sidebar.available
+            assert runtime.dashboard_list.available
+            original_dashboard_handler = runtime.dashboard_list.original
             original_panels_handler = runtime.sidebar.original
             for path in ("dashboard-family-allowed", "dashboard-family-private"):
                 frontend.async_register_built_in_panel(hass, "lovelace", sidebar_title=path, frontend_url_path=path)
+                hass.data[LOVELACE_DATA].dashboards[path] = SimpleNamespace(config={"url_path":path,"title":path,"require_admin":False})
             frontend.async_register_built_in_panel(hass, "history", sidebar_title="History fixture", frontend_url_path="family-test-history")
             results["checks"]["installation_and_virtual_switch"] = True
 
@@ -171,6 +176,24 @@ async def main():
                         admin_panels = (await admin_ws.receive_json())["result"]
                         assert {"dashboard-family-allowed", "dashboard-family-private", "family-test-history", "family-access-manager"} <= admin_panels.keys()
                     results["checks"]["native_sidebar_filtering_and_admin_isolation"] = True
+                    # The real HA profile picker independently requests this catalog.
+                    async with session.ws_connect(base + "/api/websocket") as profile_ws:
+                        assert (await profile_ws.receive_json())["type"] == "auth_required"
+                        await profile_ws.send_json({"type":"auth","access_token":token})
+                        assert (await profile_ws.receive_json())["type"] == "auth_ok"
+                        await profile_ws.send_json({"id":1,"type":"lovelace/dashboards/list"})
+                        profile_list=(await profile_ws.receive_json())["result"]
+                        assert [d["url_path"] for d in profile_list] == ["dashboard-family-allowed"]
+                        results["checks"]["profile_dashboard_picker_only_lists_granted_dashboards"] = True
+                        old_policy=runtime.policy
+                        unfiltered=deepcopy(runtime.policy.config)
+                        unfiltered["enabled_users"]=[]
+                        runtime.policy=Policy(unfiltered)
+                        await profile_ws.send_json({"id":2,"type":"lovelace/dashboards/list"})
+                        all_dashboards=(await profile_ws.receive_json())["result"]
+                        assert {"dashboard-family-allowed","dashboard-family-private"} <= {d["url_path"] for d in all_dashboards}
+                        runtime.policy=old_policy
+                        results["checks"]["profile_dashboard_list_preserves_unmanaged_access"] = True
                     await ws.send_json({"id": 7, "type": "subscribe_events", "event_type": "panels_updated"})
                     assert (await ws.receive_json())["success"]
                     changed = deepcopy(runtime.policy.config)
@@ -216,8 +239,15 @@ async def main():
                     reloaded = UserStore(hass,owner.id)
                     await reloaded.async_load()
                     assert reloaded.data["sidebar"] == owner_store.data["sidebar"]
-                    assert reloaded.data["default_panel"] == "profile"
+                    assert reloaded.data["core"]["default_panel"] == "profile"
                     results["checks"]["native_sidebar_preferences_persist"] = True
+                    async with session.ws_connect(base + "/api/websocket") as prefs_ws:
+                        assert (await prefs_ws.receive_json())["type"] == "auth_required"
+                        await prefs_ws.send_json({"type":"auth","access_token":owner_headers["Authorization"][7:]})
+                        assert (await prefs_ws.receive_json())["type"] == "auth_ok"
+                        await prefs_ws.send_json({"id":1,"type":"frontend/get_user_data","key":"core"})
+                        assert (await prefs_ws.receive_json())["result"]["value"]["default_panel"] == "profile"
+                    results["checks"]["admin_start_page_uses_native_profile_core_data"] = True
             # Inspect the installed official adapter without importing unrelated
             # Alexa/camera dependencies. This is NOT a live relay test.
             cloud_source = (Path(homeassistant.__file__).parent / "components/cloud/client.py").read_text()
@@ -236,6 +266,8 @@ async def main():
             assert hass.data[websocket_api.DOMAIN]["get_panels"] is original_panels_handler
             assert not runtime.sidebar.available
             results["checks"]["unload_restores_native_panels_handler"] = True
+            assert hass.data[websocket_api.DOMAIN]["lovelace/dashboards/list"] == original_dashboard_handler
+            results["checks"]["unload_restores_native_profile_dashboard_handler"] = True
             results["checks"]["clean_unload"] = True
             assert await hass.config_entries.async_setup(entry.entry_id)
             await hass.async_block_till_done()

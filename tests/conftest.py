@@ -6,6 +6,7 @@ from homeassistant.auth.const import GROUP_ID_USER
 from homeassistant.components import frontend, websocket_api
 from homeassistant.components.lovelace.const import LOVELACE_DATA
 from homeassistant.components.lovelace import websocket as lovelace_ws
+from homeassistant.components.lovelace.dashboard import DashboardsCollection, DashboardsCollectionWebSocket
 from homeassistant.setup import async_setup_component
 
 from custom_components.family_access_manager.api import RequestView, websocket_request
@@ -16,7 +17,8 @@ pytest_plugins = ["pytest_homeassistant_custom_component"]
 
 
 class Dashboard:
-    config = {"title": "Kinder"}
+    def __init__(self, path):
+        self.config = {"title": "Kinder", "url_path": path}
 
     async def async_load(self, force=False):
         return {"views": [{"title": "Kinder", "cards": []}]}
@@ -31,7 +33,7 @@ async def runtime(hass):
     assert await async_setup_component(hass, "websocket_api", {})
     instance = Runtime(hass)
     hass.data[DOMAIN] = instance
-    hass.data[LOVELACE_DATA] = SimpleNamespace(dashboards={"dashboard-kids": Dashboard(), "dashboard-private": Dashboard()}, resource_mode="storage")
+    hass.data[LOVELACE_DATA] = SimpleNamespace(dashboards={"dashboard-kids": Dashboard("dashboard-kids"), "dashboard-private": Dashboard("dashboard-private")}, resource_mode="storage")
     hass.http.register_view(RequestView())
     websocket_api.async_register_command(hass, websocket_request)
     for handler in (lovelace_ws.websocket_lovelace_config, lovelace_ws.websocket_lovelace_save_config, lovelace_ws.websocket_lovelace_delete_config):
@@ -41,7 +43,10 @@ async def runtime(hass):
     hass.data.setdefault(frontend.DATA_PANELS_CONFIG, {})
     websocket_api.async_register_command(hass, frontend.websocket_get_panels)
     assert instance.sidebar.install(hass.data[websocket_api.DOMAIN])
+    DashboardsCollectionWebSocket(DashboardsCollection(hass), "lovelace/dashboards", "dashboard", {}, {}).async_setup(hass)
+    assert instance.dashboard_list.install(hass.data[websocket_api.DOMAIN])
     yield instance
+    instance.dashboard_list.uninstall()
     instance.sidebar.uninstall()
     instance.gate.uninstall()
     hass.data.pop(DOMAIN, None)

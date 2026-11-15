@@ -1,4 +1,4 @@
-"""HA adapter; every prototype operation uses the same permission engine."""
+"""HA adapter; every operation uses the same permission engine."""
 
 import asyncio
 from collections import deque
@@ -15,13 +15,13 @@ from .const import DOMAIN, STORAGE_KEY, STORAGE_VERSION, VERSION
 from .gate import DashboardGate, principal
 from .policy import InvalidPolicy, Policy, Resource, default_policy, migrate_policy, validate_policy
 from .services import validate_service
-from .sidebar import SidebarFilter
+from .sidebar import DashboardListFilter, SidebarFilter
 from .sidebar_preferences import admin_sidebar, apply_order, ordered_dashboards, save_admin_sidebar
 from .error_log import ERROR_LOG_LIMIT, PermissionErrorLog, request_target
 
 
 class AccessDenied(Exception):
-    """A prototype operation was denied before reading or changing data."""
+    """An operation was denied before reading or changing data."""
 
     def __init__(self, message, *, target=None):
         super().__init__(message)
@@ -42,6 +42,7 @@ class Runtime:
         self.error_log = PermissionErrorLog(hass)
         self.gate = DashboardGate(self)
         self.sidebar = SidebarFilter(self)
+        self.dashboard_list = DashboardListFilter(self)
         self.probe_entity_id = None
         self.instance_id = uuid.uuid4().hex
 
@@ -156,6 +157,7 @@ class Runtime:
                 "native_dashboard_gate": self.policy.config["native_dashboard_gate"],
                 "gate_available": self.gate.available,
                 "sidebar_available": self.sidebar.available,
+                "dashboard_list_available": self.dashboard_list.available,
                 "sidebar_filter": self.sidebar.available and self.policy.managed(actor),
                 "device_control": self.policy.config["device_control"],
                 "probe_entity_id": self.probe_entity_id,
@@ -196,6 +198,8 @@ class Runtime:
                 raise InvalidPolicy("Die Dashboard-Prüfung ist mit dieser HA-Version nicht verfügbar.")
             if candidate["enabled_users"] and not self.sidebar.available:
                 raise InvalidPolicy("Die Seitenleistenfilterung ist mit dieser HA-Version nicht verfügbar.")
+            if candidate["enabled_users"] and not self.dashboard_list.available:
+                raise InvalidPolicy("Die Dashboardauswahl im Profil kann mit dieser HA-Version nicht gefiltert werden.")
             async with self.lock:
                 if candidate["revision"] != self.policy.config["revision"]:
                     raise Conflict("Die Rechte wurden zwischenzeitlich geändert. Bitte neu laden.")
@@ -221,7 +225,7 @@ class Runtime:
             for entity_id in entity_ids:
                 self.require_entity(user, entity_id, "control")
                 if not self.policy.config["device_control"] and entity_id != self.probe_entity_id:
-                    raise AccessDenied("Gerätebedienung ist in dieser Prüfversion derzeit ausgeschaltet. Der Testschalter bleibt nutzbar.")
+                    raise AccessDenied("Die Gerätebedienung über diese API ist ausgeschaltet. Der Testschalter bleibt nutzbar.")
                 if self.hass.states.get(entity_id) is None:
                     raise AccessDenied("Die Entität ist nicht verfügbar oder nicht freigegeben.")
             # Never accept user_id, target, templates or a context from the client.

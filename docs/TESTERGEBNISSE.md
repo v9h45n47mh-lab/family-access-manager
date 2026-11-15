@@ -1,4 +1,4 @@
-# Prüfungen – Family Access Manager 1.0.0
+# Prüfungen – Family Access Manager 1.0.1
 
 Stand: 15. November 2026. Implementierungsprüfung von `9812b7a2fdd16dd03ffee8bf52b969fe65877e08`: [erfolgreiche CI](https://github.com/v9h45n47mh-lab/family-access-manager/actions/runs/43720306286). Der Release-Commit ergänzt den Prüfnachweis und führt dieselben Prüfungen vor der Veröffentlichung erneut aus.
 
@@ -28,3 +28,7 @@ Globale HA-Dashboard-Sichtbarkeit bleibt maßgeblich. Die HA-Startseite muss sic
 ## Regulärer Updatekanal 1.0.0
 
 Zusätzliche Regressionstests prüfen nur gewählte Dashboardreihenfolgen, unveränderte Reihenfolgen nicht gewählter Dashboards, bereinigte alte Admin-/gelöschte Konten, erneutes Speichern und die weiterhin gesperrte neue Adminaktivierung. Für 1.0.0 werden außerdem Versionsangaben, HACS-Name und Veröffentlichung korrigiert. Die Gruppierung Nicht gewählt und die Übernahme der bereinigten Konfiguration werden im Browser mitgeprüft. Die Release-CI führt alle drei Prüfjobs auf dem konkreten Release-Commit erneut aus. Die Auswahl der Veröffentlichungsflags wurde mit 1.0.0/1.0.1 sowie 1.1.0-beta.1/1.1.0-rc.1 geprüft: normale Versionen erhalten latest, Vorabversionen prerelease und latest=false. Der Build prüft Semver-Format, identische Manifest-/Backend-/Frontendversionen und vorhandene Release-Notizen. Nach Veröffentlichung werden releases/latest, prerelease=false, exakter Zielcommit und Paketprüfsummen gesondert kontrolliert.
+
+## Prüfungen für 1.0.1
+
+Die reguläre Veröffentlichung ergänzt Löschbestätigung, sichtbare Versionen und Filterung der nativen Profilauswahl. Lokale HA-/DOM-Prüfungen erfolgreich. Die separate CI prüft vor Veröffentlichung den konkreten Stand mit aktuellem HA Core und Chromium einschließlich Desktop-/Mobilansichten, beider Themes und des neuen Löschdialogs. Die Startseitenprüfung verwendet jetzt das echte native Profilelement core.default_panel statt eines ungenutzten Root-Feldes; ein nativer WebSocket-Lesezugriff und Abonnement prüfen die tatsächliche HA-Kompatibilität.

@@ -1,4 +1,4 @@
-"""Family Access Manager: an explicitly scoped permission prototype."""
+"""Family Access Manager: dashboard access and user navigation."""
 
 from pathlib import Path
 
@@ -31,6 +31,8 @@ async def async_setup_entry(hass, entry):
             raise RuntimeError("Die gespeicherte Dashboard-Sperre kann mit dieser HA-Version nicht eingerichtet werden.")
         if not runtime.sidebar.install(hass.data.get(websocket_api.DOMAIN, {})):
             raise RuntimeError("Die Seitenleistenfilterung kann mit dieser HA-Version nicht eingerichtet werden.")
+        if not runtime.dashboard_list.install(hass.data.get(websocket_api.DOMAIN, {})):
+            raise RuntimeError("Die Dashboardauswahl im Profil kann mit dieser HA-Version nicht gefiltert werden.")
         await panel_custom.async_register_panel(
             hass, frontend_url_path=PANEL_PATH,
             webcomponent_name="family-access-panel", sidebar_title="Family Access",
@@ -40,6 +42,7 @@ async def async_setup_entry(hass, entry):
         )
         await hass.config_entries.async_forward_entry_setups(entry, [Platform.SWITCH])
     except Exception:
+        runtime.dashboard_list.uninstall()
         runtime.sidebar.uninstall()
         runtime.gate.uninstall()
         frontend.async_remove_panel(hass, PANEL_PATH)
@@ -53,6 +56,7 @@ async def async_unload_entry(hass, entry):
         return False
     runtime = hass.data.pop(DOMAIN)
     await runtime.error_log.flush()
+    runtime.dashboard_list.uninstall()
     runtime.sidebar.uninstall()
     runtime.gate.uninstall()
     frontend.async_remove_panel(hass, PANEL_PATH)

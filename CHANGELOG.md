@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.0.1 – 15.11.2026
+
+- Prüfversionskennzeichnungen aus Einrichtung und Meldungen entfernt; reguläre Veröffentlichung ohne Beta-Zusatz.
+- Rollen nur nach ausdrücklicher Bestätigung löschen; Abbrechen, Schließen und Escape erhalten die Rolle. Zugewiesene Rollen bleiben geschützt.
+- Eigener sichtbarer Versionsbereich in den Einstellungen für Oberfläche, Integration und UI Kit.
+- Native Dashboardliste im HA-Profil für aktivierte Benutzer nach Dashboardfreigaben filtern; Administrator- und nicht aktivierte Konten behalten ihre Auswahl.
+- Persönliche und systemweite Startseite aus dem tatsächlichen nativen HA-Profil lesen; die Adminauswahl schreibt die Startseite an die richtige Stelle, erhält andere Profileinstellungen und aktualisiert native Abonnements.
+
 ## 1.0.0 – 15.11.2026
 
 - Nur gewählte Dashboards sortierbar; übrige Dashboards im aufklappbaren Block Nicht gewählt ohne Pfeile. Reihenfolge nicht gewählter Dashboards bleibt bei der Übernahme erhalten.

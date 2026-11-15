@@ -1,6 +1,13 @@
 {
   "config": {
-    "step": {"user": {"title": "Set up Family Access Manager", "description": "This proof of concept adds permission management and guarded test functions. Existing user permissions are unchanged during setup. The optional dashboard configuration gate is enabled later in the panel. General HA device APIs are not yet secured."}},
-    "abort": {"already_configured": "Family Access Manager is already configured."}
+    "step": {
+      "user": {
+        "title": "Set up Family Access Manager",
+        "description": "Family Access manages roles, dashboard access and per-user navigation. Administrators retain full access. Existing Home Assistant permissions remain in place. Enable the optional dashboard configuration gate in Settings. Device and system permissions are managed by Home Assistant."
+      }
+    },
+    "abort": {
+      "already_configured": "Family Access Manager is already configured."
+    }
   }
 }

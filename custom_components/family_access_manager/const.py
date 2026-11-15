@@ -1,7 +1,7 @@
-"""Constants for the Family Access Manager proof of concept."""
+"""Constants for Family Access Manager."""
 
 DOMAIN = "family_access_manager"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 PANEL_PATH = "family-access-manager"
 STORAGE_VERSION = 1
 STORAGE_KEY = DOMAIN

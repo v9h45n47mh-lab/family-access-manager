@@ -53,14 +53,14 @@ async def test_order_uses_live_native_store_and_survives_reload(runtime, hass, c
     original = {'panelOrder': ['history','dashboard-kids','media-browser'], 'hiddenPanels': ['history'], 'extra': 42}
     await store.async_set_item('sidebar', original)
     await store.async_set_item('language', 'de')
-    await store.async_set_item('default_panel', 'dashboard-kids')
+    await store.async_set_item('core', {'default_panel':'dashboard-kids', 'showEntityIdPicker':True})
     updates = []
     unsubscribe = store.async_subscribe('sidebar', lambda: updates.append(deepcopy(store.data['sidebar'])))
     policy_before = deepcopy(runtime.policy.config)
     result = await apply(runtime, hass_admin_user, [child[0].id])
     assert result == {'applied': [child[0].id], 'failed': []}
     assert updates[-1] == {'panelOrder': ['history','dashboard-private','dashboard-kids','media-browser'], 'hiddenPanels':['history'], 'extra':42}
-    assert store.data['default_panel'] == 'dashboard-kids' and store.data['language'] == 'de'
+    assert store.data['core']['default_panel'] == 'dashboard-kids' and store.data['language'] == 'de'
     assert runtime.policy.config == policy_before
     reloaded = storage.UserStore(hass, child[0].id)
     await reloaded.async_load()
@@ -84,7 +84,7 @@ async def test_admin_visibility_is_per_user_keeps_rights_and_updates_native_subs
     assert result['visible_dashboards'] == ['dashboard-kids']
     assert store.data['sidebar']['hiddenPanels'] == ['history','dashboard-private']
     assert store.data['language'] == 'de' and store.data['sidebar']['extra'] == 'preserve'
-    assert store.data['default_panel'] == 'dashboard-kids' and changes == [True]
+    assert store.data['core']['default_panel'] == 'dashboard-kids' and changes == [True]
     assert runtime.policy.dashboard(principal(hass_admin_user), 'dashboard-private', 'edit')
     assert runtime.policy.config == before
     untouched = await storage.async_user_store(hass, other.id)
@@ -152,7 +152,7 @@ async def test_partial_order_failure_is_reported_and_logged_without_secrets(runt
 async def test_failed_native_write_restores_memory_and_previous_preferences(runtime, hass, hass_admin_user):
     store = await storage.async_user_store(hass, hass_admin_user.id)
     await store.async_set_item('sidebar', {'panelOrder':['history'], 'hiddenPanels':[]})
-    await store.async_set_item('default_panel', 'home')
+    await store.async_set_item('core', {'default_panel':'home', 'showEntityIdPicker':True})
     original = deepcopy(store.data)
     snap = await runtime.dispatch(hass_admin_user, 'admin_sidebar', {'user_id':hass_admin_user.id})
     with patch.object(store._store, 'async_save', side_effect=[None, OSError('disk'), None, None]):
@@ -212,3 +212,37 @@ async def test_new_changes_to_legacy_admin_bindings_still_fail(runtime, grant, h
 async def test_empty_role_order_cannot_be_applied(runtime, child, hass_admin_user):
     with pytest.raises(ValueError, match='keine Dashboards'):
         await apply(runtime,hass_admin_user,[child[0].id])
+
+
+async def test_admin_start_page_uses_native_core_preferences_and_preserves_other_core_fields(runtime,hass,hass_admin_user,hass_ws_client):
+    await storage.async_setup_frontend_storage(hass)
+    store=await storage.async_user_store(hass,hass_admin_user.id)
+    await store.async_set_item('core',{'default_panel':'dashboard-kids','showEntityIdPicker':True})
+    # A root-level field written by an earlier release is not HA's active preference.
+    await store.async_set_item('default_panel','dashboard-private')
+    snapshot=await runtime.dispatch(hass_admin_user,'admin_sidebar',{'user_id':hass_admin_user.id})
+    assert snapshot['default_panel']=='dashboard-kids'
+    ws=await hass_ws_client(hass)
+    await ws.send_json({'id':1,'type':'frontend/subscribe_user_data','key':'core'})
+    assert (await ws.receive_json())['type']=='event'
+    assert (await ws.receive_json())['success']
+    await runtime.dispatch(hass_admin_user,'save_admin_sidebar',{'user_id':hass_admin_user.id,'token':snapshot['token'],'visible_dashboards':['dashboard-private'],'default_panel':'dashboard-private'})
+    event=await ws.receive_json()
+    assert event['event']['value']=={'default_panel':'dashboard-private','showEntityIdPicker':True}
+    await ws.send_json({'id':2,'type':'frontend/get_user_data','key':'core'})
+    assert (await ws.receive_json())['result']['value']==store.data['core']
+
+
+async def test_system_default_comes_from_native_core_settings(runtime,hass,hass_admin_user):
+    system=await storage.async_system_store(hass)
+    await system.async_set_item('core',{'default_panel':'dashboard-private'})
+    result=await runtime.dispatch(hass_admin_user,'admin_sidebar',{'user_id':hass_admin_user.id})
+    assert result['default_panel']=='dashboard-private'
+
+
+async def test_native_core_start_page_change_detects_stale_admin_dialog(runtime,hass,hass_admin_user):
+    snap=await runtime.dispatch(hass_admin_user,'admin_sidebar',{'user_id':hass_admin_user.id})
+    store=await storage.async_user_store(hass,hass_admin_user.id)
+    await store.async_set_item('core',{'default_panel':'dashboard-kids'})
+    with pytest.raises(Conflict):
+        await runtime.dispatch(hass_admin_user,'save_admin_sidebar',{'user_id':hass_admin_user.id,'token':snap['token'],'visible_dashboards':[],'default_panel':'profile'})

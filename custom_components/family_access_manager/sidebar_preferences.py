@@ -20,9 +20,18 @@ def sidebar_data(store):
     return deepcopy(value)
 
 
+def core_data(store):
+    value = store.data.get("core")
+    if value is None:
+        return {}
+    if type(value) is not dict:
+        raise ValueError("Die HA-Profileinstellungen sind ungültig.")
+    return deepcopy(value)
+
+
 def fingerprint(store):
     """Only compare the settings we edit; never expose other frontend data."""
-    raw = {key: store.data.get(key) for key in ("sidebar", "default_panel")}
+    raw = {"sidebar": store.data.get("sidebar"), "default_panel": core_data(store).get("default_panel")}
     return hashlib.sha256(json.dumps(raw, sort_keys=True).encode()).hexdigest()
 
 
@@ -53,7 +62,7 @@ async def admin_sidebar(hass, user_id, catalog):
     store = await async_user_store(hass, user_id)
     sidebar = sidebar_data(store)
     system = await async_system_store(hass)
-    default = store.data.get("default_panel") or system.data.get("default_panel") or "home"
+    default = core_data(store).get("default_panel") or core_data(system).get("default_panel") or "home"
     if not isinstance(default, str):
         raise ValueError("Die HA-Startseite ist ungültig.")
     return {
@@ -75,15 +84,17 @@ async def save_admin_sidebar(hass, user_id, visible, default, catalog):
     # Explicitly include visible dashboards, including HA default_visible=False.
     old_order = sidebar.get("panelOrder", [])
     sidebar["panelOrder"] = old_order + [d["id"] for d in catalog if d["id"] in visible and d["id"] not in old_order]
-    before = {key: deepcopy(store.data.get(key)) for key in ("sidebar", "default_panel")}
+    before = {key: deepcopy(store.data.get(key)) for key in ("sidebar", "core")}
+    core = core_data(store)
+    core["default_panel"] = default
     try:
-        await store.async_set_item("default_panel", default)
+        await store.async_set_item("core", core)
         await store.async_set_item("sidebar", sidebar)
     except Exception:
         # async_set_item changes its in-memory value before attempting disk I/O.
         store.data.update(before)
         try:
-            await store.async_set_item("default_panel", before["default_panel"])
+            await store.async_set_item("core", before["core"])
             await store.async_set_item("sidebar", before["sidebar"])
         except Exception:
             store.data.update(before)

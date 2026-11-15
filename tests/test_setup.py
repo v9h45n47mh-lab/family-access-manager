@@ -18,6 +18,7 @@ async def test_entry_setup_probe_control_and_unload(hass, enable_custom_integrat
     runtime = hass.data[DOMAIN]
     assert runtime.gate.available
     assert runtime.sidebar.available
+    assert runtime.dashboard_list.available
     assert hass.data[frontend.DATA_PANELS][PANEL_PATH].require_admin
     assert runtime.probe_entity_id is not None
     assert hass.states.get(runtime.probe_entity_id).state == "off"
@@ -33,10 +34,12 @@ async def test_entry_setup_probe_control_and_unload(hass, enable_custom_integrat
     assert hass.states.get(runtime.probe_entity_id).state == "on"
     gate = runtime.gate
     sidebar = runtime.sidebar
+    dashboard_list = runtime.dashboard_list
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert DOMAIN not in hass.data
     assert not gate.available
     assert not sidebar.available
+    assert not dashboard_list.available
 
 
 async def test_single_config_flow(hass, enable_custom_integrations):
