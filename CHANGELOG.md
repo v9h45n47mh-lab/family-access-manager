@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.6.0
+
+Eigenen Spülmaschinendienst bestätigen ist unabhängig von Verlauf und Statistik. Einschalten aktiviert keine Ansicht; Ausschalten der Ansicht entfernt dieses Bestätigungsrecht nicht.
+
+Beim Wecker ersetzt Eigenen Wecker verwalten die getrennten Schalter für eigene Ansicht und Bedienung/Änderung. Die bisherige Bedienberechtigung bleibt maßgeblich; alte reine Leserechte werden nicht zu Änderungsrechten hochgestuft. Die Verwaltung aller Benutzer und Tagestypen bleibt separat. Protokoll 1 bleibt durch einen synchronisierten view-Alias kompatibel.
+
 ## 1.5.0
 
 Administration ist der erste Reiter und bündelt Benutzer, Urlaubsmodus und Rollenverwaltung auf einer gemeinsamen Seite. Anwendungstabs und Dashboards bleiben direkt erreichbar.

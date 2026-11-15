@@ -12,10 +12,10 @@ vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family
 const panel=window.document.querySelector('family-access-panel');
 const policy={revision:0,native_dashboard_gate:true,device_control:false,imported_applications:[],roles:{family:{name:'Kinder',dashboard_order:[],dashboards:{'dashboard-paul':'control'},entities:{},areas:{},labels:{},applications:{}}},bindings:{paul:['family']},enabled_users:['paul']};
 policy.admin_presentations={};policy.app_roles={admin:{name:'Admin',applications:{}},user:{name:'Benutzer',applications:{}},unused:{name:'Unbenutzte Rolle',applications:{}}};policy.app_bindings={paul:['user'],test:['user']};
-const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:true,device_control:false,version:'1.5.0',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
+const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:true,device_control:false,version:'1.6.0',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
 const snapshot={policy,users:[{id:'manuel',name:'Manuel',admin:true,active:true},{id:'paul',name:'Paul',admin:false,active:true}],dashboards:[{id:'dashboard-paul',name:'Paul'}],entities:[{id:'switch.probe',name:'Testschalter'},{id:'light.paul',name:'<img src=x onerror=alert(1)>'}],areas:[],labels:[],events:[]};
 snapshot.vacation={revision:0,enabled:false,started:null,periods:[],imported:[],managed:false,available:true,consumers:[]};
-snapshot.applications=[{"id": "light_manager", "name": "Light Manager", "permissions": {"view": "Programme ansehen", "manage": "Programme und Einstellungen verwalten"}, "connected": true}, {"id": "rollladenplaner", "name": "Shutter Manager", "permissions": {"view": "Programme ansehen", "control": "Programme bedienen und Fahrten ändern", "manage": "Programme und Einstellungen verwalten"}, "connected": true}, {"id": "essensplaner", "name": "Essensplaner", "permissions": {"view": "Essensplan ansehen", "plan": "Essen eintragen und eigene Einträge löschen", "edit_others": "Einträge anderer Benutzer ändern", "delete_others": "Einträge anderer Benutzer löschen", "manage_catalog": "Gerichte und Gerichtskatalog verwalten"}, "connected": true}, {"id": "hausarbeiten_manager", "name": "Hausarbeiten", "permissions": {"view": "Eigene Aufgaben ansehen und bearbeiten", "manage": "Aufgaben aller Familienmitglieder verwalten", "settings": "Einstellungen verwalten"}, "connected": true}, {"id": "gartenarbeit_manager", "name": "Gartenarbeit", "permissions": {"view": "Eigenes Zeitkonto und eigene Buchungen", "manage": "Alle Konten, Buchungen und Freigaben verwalten"}, "connected": true}, {"id": "spuelmaschine_verlauf", "name": "Spülmaschine", "permissions": {"view": "Verlauf und Statistik ansehen", "confirm_own": "Eigenen Ausräumdienst bestätigen", "confirm_any": "Ausräumen unabhängig vom Dienst bestätigen", "manage": "Spülgänge manuell erfassen", "statistics": "Statistik und Einstellungen ansehen"}, "connected": true}, {"id": "music_manager", "name": "Music Manager", "permissions": {"view": "Musikansicht verwenden", "play": "Musik und eigene Weckmusik bedienen", "manage": "Anwendungskonfiguration ansehen", "alarms_others": "Weckmusik anderer Benutzer verwalten", "select_speaker": "Persönliche Box auswählen", "alarm_songs": "Eigene Wecklieder verwenden"}, "connected": true}, {"id": "wecker_manager", "name": "Wecker", "permissions": {"view": "Eigene Wecker ansehen", "use_own": "Eigene Wecker bedienen und ändern", "manage": "Wecker und Tagestypen aller Benutzer verwalten"}, "connected": true}];
+snapshot.applications=[{"id": "light_manager", "name": "Light Manager", "permissions": {"view": "Programme ansehen", "manage": "Programme und Einstellungen verwalten"}, "connected": true}, {"id": "rollladenplaner", "name": "Shutter Manager", "permissions": {"view": "Programme ansehen", "control": "Programme bedienen und Fahrten ändern", "manage": "Programme und Einstellungen verwalten"}, "connected": true}, {"id": "essensplaner", "name": "Essensplaner", "permissions": {"view": "Essensplan ansehen", "plan": "Essen eintragen und eigene Einträge löschen", "edit_others": "Einträge anderer Benutzer ändern", "delete_others": "Einträge anderer Benutzer löschen", "manage_catalog": "Gerichte und Gerichtskatalog verwalten"}, "connected": true}, {"id": "hausarbeiten_manager", "name": "Hausarbeiten", "permissions": {"view": "Eigene Aufgaben ansehen und bearbeiten", "manage": "Aufgaben aller Familienmitglieder verwalten", "settings": "Einstellungen verwalten"}, "connected": true}, {"id": "gartenarbeit_manager", "name": "Gartenarbeit", "permissions": {"view": "Eigenes Zeitkonto und eigene Buchungen", "manage": "Alle Konten, Buchungen und Freigaben verwalten"}, "connected": true}, {"id": "spuelmaschine_verlauf", "name": "Spülmaschine", "permissions": {"view": "Verlauf und Statistik ansehen", "confirm_own": "Eigenen Ausräumdienst bestätigen", "confirm_any": "Ausräumen unabhängig vom Dienst bestätigen", "manage": "Spülgänge manuell erfassen", "statistics": "Statistik und Einstellungen ansehen"}, "connected": true}, {"id": "music_manager", "name": "Music Manager", "permissions": {"view": "Musikansicht verwenden", "play": "Musik und eigene Weckmusik bedienen", "manage": "Anwendungskonfiguration ansehen", "alarms_others": "Weckmusik anderer Benutzer verwalten", "select_speaker": "Persönliche Box auswählen", "alarm_songs": "Eigene Wecklieder verwenden"}, "connected": true}, {"id": "wecker_manager", "name": "Wecker", "permissions": {"view": "Eigene Wecker ansehen", "use_own": "Eigenen Wecker verwalten", "manage": "Wecker und Tagestypen aller Benutzer verwalten"}, "connected": true}];
 snapshot.dashboards.push({id:'dashboard-unsafe',name:'<img src=x onerror=alert(1)>'});
 snapshot.error_log=[{time:'2026-11-15T10:00:00Z',user_id:'paul',user_name:'Paul',operation:'read_dashboard',target:'dashboard-parents',reason:'Keine Dashboardfreigabe',source:'websocket',kind:'denied'}];
 let saves=0,vacationSaves=0,rejectVacation=false;
@@ -86,7 +86,7 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   assert(snapshot.policy.enabled_users.includes('test'),'Activation must be included in saved configuration');
   for(const app of snapshot.applications){
     click('[data-action="navigate"][data-page="app-'+app.id+'"]');
-    assert.equal(panel.shadowRoot.querySelectorAll('[data-action="application-grant"]').length,Object.keys(app.permissions).length);
+    assert.equal(panel.shadowRoot.querySelectorAll('[data-action="application-grant"]').length,Object.keys(app.permissions).filter(key=>app.id!=='wecker_manager'||key!=='view').length);
   }
   click('[data-action="navigate"][data-page="app-essensplaner"]');
   click('[data-action="application-grant"][data-permission="delete_others"]');
@@ -94,6 +94,19 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   assert.equal(panel.policy.app_roles.user.applications.essensplaner.view,true);
   click('[data-action="application-grant"][data-permission="view"]');
   assert.equal(panel.policy.app_roles.user.applications.essensplaner.delete_others,false);
+  click('[data-action="navigate"][data-page="administration"]');
+  click('[data-action="navigate"][data-page="app-spuelmaschine_verlauf"]');
+  click('[data-permission="confirm_own"]');
+  assert.equal(Boolean(panel.policy.app_roles.user.applications.spuelmaschine_verlauf.view),false);
+  click('[data-permission="view"]');click('[data-permission="view"]');
+  assert.equal(panel.policy.app_roles.user.applications.spuelmaschine_verlauf.confirm_own,true);
+  click('[data-action="navigate"][data-page="app-wecker_manager"]');
+  assert.equal(panel.shadowRoot.querySelector('[data-permission="view"]'),null);
+  assert.equal(panel.shadowRoot.querySelector('[data-permission="use_own"]').getAttribute('aria-label'),'Eigenen Wecker verwalten');
+  click('[data-permission="use_own"]');assert.equal(panel.policy.app_roles.user.applications.wecker_manager.view,true);
+  click('[data-permission="manage"]');click('[data-permission="use_own"]');
+  assert.equal(panel.policy.app_roles.user.applications.wecker_manager.view,false);
+  assert.equal(panel.policy.app_roles.user.applications.wecker_manager.manage,false);
   click('[data-action="navigate"][data-page="administration"]');
   const draft=JSON.stringify(panel.policy),beforeSaves=saves;
   click('[data-action="vacation-change"]');await settle();
@@ -126,7 +139,7 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   const versions=panel.shadowRoot.querySelector('.version-info');
   assert(versions&&versions===panel.shadowRoot.querySelector('main').lastElementChild);
   assert.equal(panel.shadowRoot.querySelector('#versions-content,#activation-content,[data-action="setting-change"]'),null);
-  assert(versions.textContent.includes('1.5.0')&&versions.textContent.includes('1.7.0'));
+  assert(versions.textContent.includes('1.6.0')&&versions.textContent.includes('1.7.0'));
   click('[data-action="navigate"][data-page="administration"]');
   click('[data-action="add-role"]');
   const newRole=panel.appRoleId;

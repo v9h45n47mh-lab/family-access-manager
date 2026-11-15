@@ -26,11 +26,11 @@ class FamilyAccessPanel extends HTMLElement {
       if(event.action==='application-grant'){
         const {application,permission}=event.data,role=this.policy.app_roles[this.appRoleId];
         const grants=role.applications[application] ||= {};
-        if(permission==='view'&&!event.checked){for(const key of Object.keys(grants))grants[key]=false;}
+        if(permission==='view'&&!event.checked){for(const key of Object.keys(grants))if(application!=='spuelmaschine_verlauf'||key!=='confirm_own')grants[key]=false;}
         grants[permission]=event.checked;
-        if(event.checked&&permission!=='view')grants.view=true;
+        if(event.checked&&permission!=='view'&&!(application==='spuelmaschine_verlauf'&&permission==='confirm_own'))grants.view=true;
         if(event.checked&&permission==='manage'&&application==='rollladenplaner')grants.control=true;
-        if(event.checked&&permission==='manage'&&application==='wecker_manager')grants.use_own=true;
+        if(application==='wecker_manager'){if(permission==='manage'&&event.checked)grants.use_own=true;if(permission==='use_own'&&!event.checked)grants.manage=false;grants.view=Boolean(grants.use_own);}
         this.markDirty();this.render();
         [...this.shadowRoot.querySelectorAll('[data-action="application-grant"]')].find(el=>el.dataset.application===application&&el.dataset.permission===permission)?.focus({preventScroll:true});return;
       }
@@ -327,7 +327,7 @@ class FamilyAccessPanel extends HTMLElement {
     if(!role)return emptyState('Lege zuerst eine Rolle an.');
     const picker=kitSelect({id:'app-role-select',label:'App-Rolle',value:this.appRoleId,options:options(Object.entries(this.policy.app_roles).map(([id,r])=>[id,r.name]))});
     const grants=role.applications[id]||{};
-    return section({id:'application-'+id,title:application.name,content:picker+feedback(application.connected?'Die Anwendung prüft diese Rechte im Backend. HA-Geräte- und Kontorechte bleiben zusätzlich wirksam.':'Die Anwendung ist noch nicht verbunden. Ihre Rechte lassen sich bereits vorbereiten.')+Object.entries(application.permissions).map(([permission,label])=>row({title:label,trailing:toggle({label,action:'application-grant',checked:Boolean(grants[permission]),iconOnly:true,data:{application:id,permission}})})).join('')+feedback('Diese App-Rechte gelten für alle Benutzer mit dieser App-Rolle. Ein Wechsel der Darstellung verändert sie nicht. Mehrere App-Rollen ergänzen sich; übernommene Rechte bleiben bis zur bewussten Neuzuordnung erhalten.')});
+    return section({id:'application-'+id,title:application.name,content:picker+feedback(application.connected?'Die Anwendung prüft diese Rechte im Backend. HA-Geräte- und Kontorechte bleiben zusätzlich wirksam.':'Die Anwendung ist noch nicht verbunden. Ihre Rechte lassen sich bereits vorbereiten.')+Object.entries(application.permissions).filter(([permission])=>id!=='wecker_manager'||permission!=='view').map(([permission,label])=>row({title:label,trailing:toggle({label,action:'application-grant',checked:Boolean(grants[permission]),iconOnly:true,data:{application:id,permission}})})).join('')+feedback('Diese App-Rechte gelten für alle Benutzer mit dieser App-Rolle. Ein Wechsel der Darstellung verändert sie nicht. Mehrere App-Rollen ergänzen sich; übernommene Rechte bleiben bis zur bewussten Neuzuordnung erhalten.')});
   }
   testContent() {
     return section({id:'checks',title:'Zugriff prüfen',content:feedback('Diese Prüfung führt echte Dashboard-Anfragen mit dem angemeldeten HA-Konto aus.')
@@ -349,7 +349,7 @@ class FamilyAccessPanel extends HTMLElement {
       +section({id:'scope',title:'Hinweise',expanded:false,content:facts.map(([title,description])=>row({title,description})).join('')
       +helpContent({content:'<p>Family Administration verwaltet Anwendungsrechte je Rolle sowie Dashboardzugriff und Navigation. Freigegebene Dashboards benötigen keine zusätzlichen Gerätefreigaben. Vorhandene HA-Benutzerrechte, Gruppen, Tokens und Netzwerkeinstellungen bleiben bestehen.</p><p>Die Dashboardfreigaben schützen für aktiv eingeschränkte Konten automatisch neue Konfigurationsanfragen. Bereits geladene Inhalte lassen sich nicht zurückholen. Profil und feste Konto-/Benachrichtigungselemente bleiben erreichbar. Beim Entfernen der Integration entfällt die Filterung.</p>'})})
       +(this.snapshot?section({id:'audit',title:'Letzte Zugriffsprüfungen',expanded:false,content:this.snapshot.events.slice(0,30).map(ev=>row({title:ev.operation,description:ev.target+' · '+new Date(ev.time).toLocaleString('de-DE'),trailing:statusBadge({label:ev.allowed?'Erlaubt':'Abgelehnt',state:ev.allowed?'success':'error',icon:ev.allowed?'success':'failure'})})).join('')||emptyState('Noch keine Prüfungen. Nach einem Test neu laden.')}):'')
-      +versionInfo({frontend:'1.5.0',backend:this.status.version,ui:UI_VERSION});
+      +versionInfo({frontend:'1.6.0',backend:this.status.version,ui:UI_VERSION});
   }
   render() {
     const scroll=this.shadowRoot.querySelector('nav')?.scrollLeft||0;

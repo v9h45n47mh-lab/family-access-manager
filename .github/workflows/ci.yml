@@ -13,8 +13,16 @@ permissions:
 jobs:
   ha-tests:
     runs-on: ubuntu-latest
+    env:
+      APPLICATION_CONSUMER_ROOT: ${{ github.workspace }}/.test-deps
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: v9h45n47mh-lab/spuelmaschine-verlauf
+          ref: 00583979a97e7164f4a1fa3c2604cb32e995003e
+          path: .test-deps/spuelmaschine-verlauf
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14'

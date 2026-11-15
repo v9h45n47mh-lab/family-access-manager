@@ -180,7 +180,7 @@ def validate_policy(raw):
     checked = _validate_legacy_policy({k: v for k, v in raw.items() if k not in ('app_roles', 'app_bindings', 'admin_presentations')})
     if any(role['applications'] for role in checked['roles'].values()):
         raise InvalidPolicy('Darstellungen dürfen keine App-Rechte enthalten.')
-    roles, bindings = raw['app_roles'], raw['app_bindings']
+    roles, bindings = deepcopy(raw['app_roles']), raw['app_bindings']
     if type(roles) is not dict or len(roles) > 700:
         raise InvalidPolicy('Zu viele oder ungültige App-Rollen.')
     for rid, role in roles.items():
@@ -192,6 +192,11 @@ def validate_policy(raw):
         probe = _legacy_default_policy()
         probe['roles'] = {rid: {**probe['roles']['family'], **deepcopy(role)}}
         _validate_legacy_policy(probe)
+        alarm = role['applications'].get('wecker_manager')
+        if alarm is not None:
+            # Keep protocol-1 view as an alias, never promote old view-only grants to editing.
+            alarm['use_own'] = bool(alarm.get('use_own') or alarm.get('manage'))
+            alarm['view'] = alarm['use_own']
     if type(bindings) is not dict or len(bindings) > 500:
         raise InvalidPolicy('Ungültige App-Rollenzuordnung.')
     for uid, assigned in bindings.items():

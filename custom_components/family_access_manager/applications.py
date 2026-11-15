@@ -37,5 +37,5 @@ APPLICATIONS = {'light_manager': {'name': 'Light Manager',
                                    'alarm_songs': 'Eigene Wecklieder verwenden'}},
  'wecker_manager': {'name': 'Wecker',
                     'permissions': {'view': 'Eigene Wecker ansehen',
-                                    'use_own': 'Eigene Wecker bedienen und ändern',
+                                    'use_own': 'Eigenen Wecker verwalten',
                                     'manage': 'Wecker und Tagestypen aller Benutzer verwalten'}}}
