@@ -111,12 +111,19 @@ class Vacation:
             # selected the current central mode; history cannot change that choice.
             old_periods = periods(legacy.get('periods', []))
             candidate['periods'] = periods([*candidate['periods'], *old_periods])
-            if not candidate['managed'] and legacy['enabled']:
-                started = legacy.get('started') or today().isoformat()
-                started=date.fromisoformat(started).isoformat()
-                if date.fromisoformat(started)>today():raise ValueError('Ein aktiver Urlaub kann nicht in der Zukunft beginnen.')
-                candidate['started'] = min(candidate['started'] or started, started)
-                candidate['enabled'] = True
+            if legacy['enabled']:
+                first = date.fromisoformat(legacy.get('started') or today().isoformat())
+                if first > today():
+                    raise ValueError('Ein aktiver Urlaub kann nicht in der Zukunft beginnen.')
+                if not candidate['managed']:
+                    candidate['started'] = min(candidate['started'] or first.isoformat(), first.isoformat())
+                    candidate['enabled'] = True
+                elif first < today():
+                    # A late household client may have paused tasks before the
+                    # central choice. Preserve those elapsed days, without
+                    # changing today's explicitly chosen on/off state.
+                    candidate['periods'] = periods([*candidate['periods'], {
+                        'start': first.isoformat(), 'end': (today() - timedelta(days=1)).isoformat()}])
             candidate['imported'].append(source)
             await self.commit(candidate)
 

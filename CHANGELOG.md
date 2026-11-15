@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.2.1
+
+Beim nachträglichen Start von Hausarbeiten bleiben auch vergangene Tage einer noch laufenden lokalen Urlaubspause erhalten, wenn der zentrale Modus bereits bewusst geändert wurde. Die zentrale Entscheidung für heute bleibt erhalten. Zwei zusätzliche echte HA-Tests prüfen beide zentralen Zustände und den Neustart.
+
+Empfohlenes Update: Family Access Manager 1.2.1 zuerst installieren, danach Light Manager 1.5.0, Shutter Manager 1.9.0 und Hausarbeiten 0.5.0. Home Assistant neu starten und Browser/App neu laden.
+
 ## 1.2.0
 
 Der Urlaubsmodus wird ausschließlich unter **Family Access → Einstellungen → Urlaubsmodus** bedient. Die eigenen Urlaubsmodus-Bereiche und Schalter entfallen aus Light Manager, Shutter Manager und Hausarbeiten. Die Option „Im Urlaub pausieren“ je Programm bleibt erhalten; Programme ohne diese Option laufen weiter. Hausarbeiten pausieren ohne Änderung ihres Wiederholungsrhythmus und laufen beim Ausschalten ab heute weiter.
