@@ -1,5 +1,12 @@
 # Änderungen
 
+## 1.0.0-beta.2 – 15.11.2026
+
+- Kompakte gemeinsame Benutzerzeile mit Name, Rolle und Aktivierung aus HA UI Kit 1.6.0.
+- Dauerhaften Warnbanner und lange Einleitung aus der Benutzeransicht entfernt; Zugriffsschutz in die Einstellungen verschoben.
+- Family Access als Admin-Panel registriert und für eingeschränkte Benutzer aus der Panelliste entfernt.
+- Serverseitig geschützter Panel-Start; zwischengespeicherte Oberflächen zeigen normalen Benutzern keine Inhalte.
+
 ## 1.0.0-beta.1 – 15.11.2026
 
 - Klare semantische Vorabversionierung eingeführt.

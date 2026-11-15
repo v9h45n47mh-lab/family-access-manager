@@ -28,7 +28,7 @@ def panel_data():
         "dashboard-private": {"component_name": "lovelace", "url_path": "dashboard-private", "title": "Privat"},
         "lovelace": {"component_name": "lovelace", "url_path": "lovelace", "title": "Übersicht"},
         "history": {"component_name": "history", "url_path": "history", "title": "Verlauf"},
-        PANEL_PATH: {"component_name": "custom", "url_path": PANEL_PATH, "title": "Family Access"},
+        PANEL_PATH: {"component_name": "custom", "url_path": PANEL_PATH, "title": "Family Access", "require_admin": True},
         "profile": {"component_name": "profile", "url_path": "profile", "title": None},
         "notfound": {"component_name": "notfound", "url_path": "notfound", "title": None},
     }
@@ -38,7 +38,7 @@ def test_only_allowed_dashboard_and_account_routes_without_mutation():
     panels = panel_data()
     before = deepcopy(panels)
     result = visible_panels(Policy(configuration()), Principal("child"), panels)
-    assert set(result) == {"dashboard-kids", PANEL_PATH, "profile", "notfound"}
+    assert set(result) == {"dashboard-kids", "profile", "notfound"}
     assert panels == before
     assert result["dashboard-kids"] == before["dashboard-kids"]
 
@@ -46,7 +46,7 @@ def test_only_allowed_dashboard_and_account_routes_without_mutation():
 def test_no_grants_hides_all_dashboards_and_default_panel():
     config = configuration()
     config["bindings"]["child"] = []
-    assert set(visible_panels(Policy(config), Principal("child"), panel_data())) == {PANEL_PATH, "profile", "notfound"}
+    assert set(visible_panels(Policy(config), Principal("child"), panel_data())) == {"profile", "notfound"}
 
 
 @pytest.mark.parametrize("user", [Principal("child", is_admin=True), Principal("child", is_owner=True), Principal("unmanaged")])
@@ -68,7 +68,7 @@ def test_proxy_handles_native_result_formats(encoding):
     else:
         data = message if encoding == "dict" else json.dumps(message)
         proxy.send_message(data.encode() if encoding == "bytes" else data)
-    assert set(messages[0]["result"]) == {"dashboard-kids", PANEL_PATH, "profile", "notfound"}
+    assert set(messages[0]["result"]) == {"dashboard-kids", "profile", "notfound"}
     assert connection.user.id == "child"
 
 
@@ -92,7 +92,7 @@ def test_sidebar_uninstall_restores_only_owned_handler():
 def panels(runtime, hass):
     for path, data in panel_data().items():
         frontend.async_register_built_in_panel(hass, data["component_name"],
-                                              sidebar_title=data["title"], frontend_url_path=path)
+                                              sidebar_title=data["title"], frontend_url_path=path, require_admin=data.get("require_admin", False))
     for path in ("calendar", "media-browser", "logbook", "todo", "unknown-custom"):
         frontend.async_register_built_in_panel(hass, path, sidebar_title=path)
     frontend.async_register_built_in_panel(hass, "lovelace", sidebar_title="Admin", frontend_url_path="dashboard-admin", require_admin=True)
@@ -111,7 +111,7 @@ async def test_native_get_panels_filters_only_managed_user(runtime, hass, child,
     assert not runtime.policy.config["native_dashboard_gate"]
     selected = await hass_ws_client(hass, access_token=child[1])
     result = await get_panels(selected)
-    assert set(result) == {"dashboard-kids", PANEL_PATH, "profile", "notfound"}
+    assert set(result) == {"dashboard-kids", "profile", "notfound"}
     assert result["dashboard-kids"] == panels["dashboard-kids"]
     admin = await hass_ws_client(hass)
     assert await get_panels(admin) == panels
@@ -147,7 +147,7 @@ async def test_saved_grants_refresh_open_sidebar_and_deactivation_restores_panel
     await runtime.dispatch(hass_admin_user, "save_policy", candidate)
     assert (await ws.receive_json())["type"] == "event"
     restored = await get_panels(ws, 4)
-    assert set(restored) == set(panels) - {"dashboard-admin"}
+    assert set(restored) == set(panels) - {"dashboard-admin", PANEL_PATH}
     assert runtime.policy.config["bindings"][child[0].id] == ["family"]
 
 
@@ -156,3 +156,18 @@ async def test_cannot_enable_user_when_sidebar_handler_unavailable(runtime, chil
     with pytest.raises(InvalidPolicy, match="Seitenleistenfilterung"):
         await runtime.dispatch(hass_admin_user, "save_policy", deepcopy(grant))
     assert not runtime.sidebar.available
+
+
+async def test_family_panel_stays_hidden_after_user_is_not_managed(runtime, hass, child, panels, hass_ws_client):
+    ws = await hass_ws_client(hass, access_token=child[1])
+    response = await get_panels(ws)
+    assert PANEL_PATH not in response
+    assert "dashboard-private" in response
+
+
+def test_managed_user_cannot_whitelist_the_family_panel_as_a_dashboard():
+    config = configuration()
+    config["roles"]["family"]["dashboards"][PANEL_PATH] = "view"
+    panels = panel_data()
+    panels[PANEL_PATH]["component_name"] = "lovelace"
+    assert PANEL_PATH not in visible_panels(Policy(config), Principal("child"), panels)

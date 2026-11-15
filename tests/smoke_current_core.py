@@ -73,10 +73,10 @@ async def main():
             base = f"http://127.0.0.1:{port}"
             headers = {"Authorization": "Bearer " + token}
             async with ClientSession() as session:
-                async with session.get(base + "/family_access_manager_frontend/family-ui/1.5.2/family-ui.js") as response:
+                async with session.get(base + "/family_access_manager_frontend/family-ui/1.6.0/family-ui.js") as response:
                     assert response.status == 200
                     assert "javascript" in response.headers.get("Content-Type", "")
-                    assert 'UI_VERSION = "1.5.2"' in await response.text()
+                    assert 'UI_VERSION = "1.6.0"' in await response.text()
                 results["checks"]["vendored_kit_module_served_with_correct_mime"] = True
                 async with session.get(base + "/api/brands/marketplace/family_access_manager/icon.png", headers=headers) as response:
                     assert response.status == 200
@@ -125,6 +125,11 @@ async def main():
                         diagnostics = (await response.json())["result"]["events"]
                         assert any(e["source"] == "native_websocket" and e["operation"] == "lovelace/config" and e["reason"] for e in diagnostics)
                         assert all(e["user_id"] == child.id for e in diagnostics)
+                    async with session.post(base + "/api/family_access_manager/request", headers=headers, json={"action": "admin_panel_status", "payload": {}}) as response:
+                        assert response.status == 403
+                    async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action": "admin_panel_status", "payload": {}}) as response:
+                        assert response.status == 200 and (await response.json())["result"]["is_admin"]
+                    results["checks"]["family_panel_bootstrap_admin_only"] = True
                     results["checks"]["error_log_admin_only_and_has_reasons"] = True
                     async with session.post(base + "/api/family_access_manager/request", headers=owner_headers, json={"action": "admin_snapshot", "payload": {}}) as response:
                         snapshot = (await response.json())["result"]
@@ -157,14 +162,14 @@ async def main():
                     assert "dashboard-family-allowed" in visible
                     assert "dashboard-family-private" not in visible
                     assert "family-test-history" not in visible
-                    assert "family-access-manager" in visible
+                    assert "family-access-manager" not in visible
                     async with session.ws_connect(base + "/api/websocket") as admin_ws:
                         assert (await admin_ws.receive_json())["type"] == "auth_required"
                         await admin_ws.send_json({"type": "auth", "access_token": owner_headers["Authorization"][7:]})
                         assert (await admin_ws.receive_json())["type"] == "auth_ok"
                         await admin_ws.send_json({"id": 1, "type": "get_panels"})
                         admin_panels = (await admin_ws.receive_json())["result"]
-                        assert {"dashboard-family-allowed", "dashboard-family-private", "family-test-history"} <= admin_panels.keys()
+                        assert {"dashboard-family-allowed", "dashboard-family-private", "family-test-history", "family-access-manager"} <= admin_panels.keys()
                     results["checks"]["native_sidebar_filtering_and_admin_isolation"] = True
                     await ws.send_json({"id": 7, "type": "subscribe_events", "event_type": "panels_updated"})
                     assert (await ws.receive_json())["success"]

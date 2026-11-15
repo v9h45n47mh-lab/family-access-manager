@@ -1,6 +1,6 @@
 {
-  "version": "1.5.2",
+  "version": "1.6.0",
   "repository": "v9h45n47mh-lab/ha-ui-kit",
-  "commit": "c548bf4242c66294226b8175b0a2f8b5ac3c7475",
-  "css": "UI_CSS only; no local style rules"
+  "commit": "ef4197497238f329d8564af274bf5df9ea12ac86",
+  "css": "UI_CSS only; no local style rules; shared userAccessRow"
 }

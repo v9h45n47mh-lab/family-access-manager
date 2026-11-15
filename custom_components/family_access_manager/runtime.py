@@ -133,6 +133,9 @@ class Runtime:
         if type(payload) is not dict:
             raise ValueError("Ungültige Anfrage.")
         actor = principal(user)
+        if action == "admin_panel_status":
+            self.require_admin(user)
+            return await self._dispatch(user, "status", payload)
         if action == "admin_error_log":
             self.require_admin(user)
             if payload:

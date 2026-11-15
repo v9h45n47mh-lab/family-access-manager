@@ -36,7 +36,7 @@ async def async_setup_entry(hass, entry):
             webcomponent_name="family-access-panel", sidebar_title="Family Access",
             sidebar_icon="mdi:shield-account-outline",
             module_url=f"/family_access_manager_frontend/panel.js?v={VERSION}",
-            embed_iframe=False, require_admin=False,
+            embed_iframe=False, require_admin=True,
         )
         await hass.config_entries.async_forward_entry_setups(entry, [Platform.SWITCH])
     except Exception:

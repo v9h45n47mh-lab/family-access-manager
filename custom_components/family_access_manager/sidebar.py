@@ -15,13 +15,15 @@ SYSTEM_ROUTES = frozenset({"profile", "notfound", "_my_redirect", "app"})
 
 
 def visible_panels(policy, user, panels):
-    """Keep allowed dashboards and account/check routes for managed users."""
+    """Keep allowed dashboards and account routes for managed users."""
     if not policy.managed(user):
         return panels
     result = {}
     for key, panel in panels.items():
         path = panel.get("url_path") or key
-        if path in SYSTEM_ROUTES or path == PANEL_PATH:
+        if path == PANEL_PATH:
+            continue
+        if path in SYSTEM_ROUTES:
             result[key] = panel
         elif panel.get("component_name") == "lovelace" and policy.dashboard(user, path):
             result[key] = panel

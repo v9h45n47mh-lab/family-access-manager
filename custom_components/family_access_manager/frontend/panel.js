@@ -1,9 +1,9 @@
-import {UI_CSS, UI_VERSION, escapeHtml as esc, panelHeader, navigation, section, row, button, iconButton, field, selectField, toggle, feedback, emptyState, loadingState, versionInfo, statusBadge, helpContent, confirmDialog, textareaField, bindUI} from './family-ui/1.5.2/family-ui.js';
+import {UI_CSS, UI_VERSION, escapeHtml as esc, panelHeader, navigation, section, row, button, iconButton, field, selectField, toggle, feedback, emptyState, loadingState, versionInfo, statusBadge, helpContent, confirmDialog, textareaField, userAccessRow, bindUI} from './family-ui/1.6.0/family-ui.js';
 const options = values => values.map(([value,label]) => ({value,label}));
 const kitSelect = (props,data={},inline=false) => {
   const attrs=Object.entries(data).map(([key,value])=>` data-${key}="${esc(value)}"`).join('');
-  const html=selectField(props).replace('<select ',`<select${attrs} `);
-  return inline ? html.replace('<span>','<span class="visually-hidden">') : html;
+  const html=selectField({...props,hideLabel:inline}).replace('<select ',`<select${attrs} `);
+  return html;
 };
 const dashboardLevels = [["none","Kein Zugriff"],["view","Freigegeben"]];
 
@@ -46,7 +46,7 @@ class FamilyAccessPanel extends HTMLElement {
   set hass(value) {
     this._hass=value;
     const who=value?.user?.id;
-    if (who && this.who !== who) { this.who=who; this.status=null; this.snapshot=null; this.errorLog=[]; this.reload(); }
+    if (who && this.who !== who) { this.who=who; this.status=null; this.snapshot=null; this.policy=null; this.errorLog=[]; this.output=null; this.notice=""; this.accessDenied=false; this.reload(); }
   }
   set narrow(value) { this.toggleAttribute("narrow", value); }
   set panel(value) { this._panel=value; }
@@ -55,15 +55,18 @@ class FamilyAccessPanel extends HTMLElement {
     if (!this._hass || this.busy) return;
     this.busy=true;
     try {
-      this.status=await this.api("status");
+      this.status=await this.api("admin_panel_status");
       if (this.status.is_admin) {
         this.snapshot=await this.api("admin_snapshot"); this.policy=structuredClone(this.snapshot.policy);
         this.errorLog=structuredClone(this.snapshot.error_log||[]);
         if (!this.policy.roles[this.roleId]) this.roleId=Object.keys(this.policy.roles)[0] || "";
       } else this.tab="test";
       this.dirty=false; this.error="";
-    } catch(e) { this.error=e.message || String(e); }
+    } catch(e) { if(e.code==="unauthorized")this.denyAccess();else this.error=e.message || String(e); }
     finally { this.busy=false; this.render(); }
+  }
+  denyAccess() {
+    this.accessDenied=true; this.status={is_admin:false}; this.snapshot=null; this.policy=null; this.errorLog=[]; this.output=null; this.notice=""; this.dirty=false;
   }
   markDirty() {
     this.dirty=true;
@@ -104,7 +107,7 @@ class FamilyAccessPanel extends HTMLElement {
         this.output={"WebSocket und HTTP":same ? "Dieselbe Prüfinstanz erreicht" : "Abweichung erkannt", "Aufrufadresse":location.origin,"Cloudzugriff":location.hostname.endsWith(".ui.nabu.casa")?"Von der Nabu-Casa-Adresse aufgerufen":"Für die Cloudprüfung auch von der Nabu-Casa-Adresse ausführen", "Prüfumfang":"Dashboardfreigaben"};
         this.error=""; this.render(); return;
       }
-    } catch(err) { this.error=err.message || String(err); this.render(); }
+    } catch(err) { if(err.code==="unauthorized")this.denyAccess();else this.error=err.message || String(err); this.render(); }
   }
   change(e) {
     const el=e.target;
@@ -122,19 +125,12 @@ class FamilyAccessPanel extends HTMLElement {
     if(el.dataset.setting) { this.policy[el.dataset.setting]=el.checked; this.markDirty(); }
   }
   userDescription(user) {
-    return (this.policy.enabled_users.includes(user.id)?'Family Access aktiv':'Family Access aus')+(user.active?'':' · HA-Konto inaktiv');
+    return !user.active?'HA-Konto inaktiv':this.policy.enabled_users.includes(user.id)?'Eingeschränkt':'HA-Standardzugriff';
   }
   userContent() {
-    const roles=Object.entries(this.policy.roles).map(([id,r])=>[id,r.name]);
-    const users=this.snapshot.users.map(u=>{
-      const assigned=this.policy.bindings[u.id],value=assigned?.[0]||'deny';
-      return u.admin ? row({title:u.name,description:'Administrator',trailing:statusBadge({label:'Vollzugriff',state:'active',icon:'lock'})})
-        : `<div class="grid">${row({title:u.name,description:this.userDescription(u),trailing:toggle({label:'Family Access für '+u.name,action:'user-activation',iconOnly:true,checked:this.policy.enabled_users.includes(u.id),data:{user:u.id}})})}${kitSelect({id:'user-'+u.id,label:'Rolle für '+u.name,value,options:options([['deny','Kein Zugriff'],...roles])},{user:u.id})}</div>`;
-    }).join('');
-    return section({id:'users',title:'Benutzer',content:feedback('Family Access je Benutzer einschalten und eine Rolle wählen. Die Seitenleiste zeigt dann nur freigegebene Dashboards sowie Family Access und das eigene Profil. Ausgeschaltet bleibt der native HA-Zugriff unverändert; die Rolle bleibt gespeichert. Neue Benutzer sind ausgeschaltet. Änderungen speichern. Administratoren behalten Vollzugriff.')+users})
-      + section({id:'activation',title:'Dashboard-Sperre',content:
-        row({title:'Dashboard-Konfigurationen für aktivierte Benutzer sperren',description:'Zusätzliche Dashboard-Sperre nur für Benutzer mit eingeschaltetem Family Access. Geräte, Verlauf und andere HA-APIs bleiben außerhalb dieser Sperre.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',iconOnly:true,checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})
-        });
+    const roles=Object.entries(this.policy.roles).map(([value,r])=>({value,label:r.name}));
+    const users=this.snapshot.users.map(u=>userAccessRow({id:u.id,title:u.name,description:u.admin?'Administrator':this.userDescription(u),admin:u.admin,value:this.policy.bindings[u.id]?.[0]||'deny',options:[{value:'deny',label:'Keine Rolle'},...roles],enabled:this.policy.enabled_users.includes(u.id),toggleAction:'user-activation',toggleLabel:'Family Access für '+u.name})).join('');
+    return section({id:'users',title:'Benutzer',content:feedback('Aktivierte Benutzer sehen die Dashboards ihrer Rolle.')+users});
   }
   roleContent() {
     const role=this.policy.roles[this.roleId],add=button({label:'Rolle',icon:'add',action:'add-role',variant:'primary'});
@@ -163,16 +159,21 @@ class FamilyAccessPanel extends HTMLElement {
   }
   scopeContent() {
     const facts=[['Dashboardfreigaben','Rollen und Benutzeraktivierung'],['Seitenleiste',this.status.sidebar_filter?'Nach Rollen gefiltert':this.status.sidebar_available?'Für aktivierte Benutzer gefiltert':'Nicht verfügbar'],['Native Dashboard-Konfigurationen',this.status.native_dashboard_gate&&this.status.gate_available?'Sperre eingeschaltet':'Sperre ausgeschaltet'],['Geräte- und Systemrechte','Durch Home Assistant verwaltet'],['Nabu Casa auf deiner Instanz','Vor Ort zu prüfen']];
-    return section({id:'scope',title:'Umfang der Prüfversion',content:facts.map(([title,description])=>row({title,description})).join('')
+    return section({id:'activation',title:'Zugriffsschutz',content:row({title:'Dashboard-Konfigurationen sperren',description:'Blockiert nicht freigegebene Dashboard-Konfigurationen für aktivierte Benutzer.',trailing:toggle({label:'Dashboard-Konfigurationen sperren',action:'setting-change',iconOnly:true,checked:this.policy.native_dashboard_gate,disabled:!this.status.gate_available,data:{setting:'native_dashboard_gate'}})})})
+      +section({id:'scope',title:'Hinweise',expanded:false,content:facts.map(([title,description])=>row({title,description})).join('')
       +helpContent({content:'<p>Family Access verwaltet Dashboardzugriff und Navigation. Freigegebene Dashboards benötigen keine zusätzlichen Gerätefreigaben. Vorhandene HA-Benutzerrechte, Gruppen, Tokens und Netzwerkeinstellungen bleiben bestehen.</p><p>Die zusätzliche Dashboard-Sperre schützt neue Konfigurationsanfragen. Bereits geladene Inhalte lassen sich nicht zurückholen. Profil und feste Konto-/Benachrichtigungselemente bleiben erreichbar. Beim Entfernen der Integration entfällt die Filterung.</p>'})
-      +versionInfo({frontend:'1.0.0-beta.1',backend:this.status.version,ui:UI_VERSION})})
-      +(this.snapshot?section({id:'audit',title:'Letzte Zugriffsprüfungen',content:this.snapshot.events.slice(0,30).map(ev=>row({title:ev.operation,description:ev.target+' · '+new Date(ev.time).toLocaleString('de-DE'),trailing:statusBadge({label:ev.allowed?'Erlaubt':'Abgelehnt',state:ev.allowed?'success':'error',icon:ev.allowed?'success':'failure'})})).join('')||emptyState('Noch keine Prüfungen. Nach einem Test neu laden.')}):'');
+      +versionInfo({frontend:'1.0.0-beta.2',backend:this.status.version,ui:UI_VERSION})})
+      +(this.snapshot?section({id:'audit',title:'Letzte Zugriffsprüfungen',expanded:false,content:this.snapshot.events.slice(0,30).map(ev=>row({title:ev.operation,description:ev.target+' · '+new Date(ev.time).toLocaleString('de-DE'),trailing:statusBadge({label:ev.allowed?'Erlaubt':'Abgelehnt',state:ev.allowed?'success':'error',icon:ev.allowed?'success':'failure'})})).join('')||emptyState('Noch keine Prüfungen. Nach einem Test neu laden.')}):'');
   }
   render() {
+    const styles=`<style>${UI_CSS}</style>`;
+    if(this.accessDenied||this.status?.is_admin===false||(this._hass?.user?.is_admin===false&&!this._hass.user.is_owner)) {
+      this.shadowRoot.innerHTML=`${styles}${feedback('Family Access ist nur für Administratoren verfügbar.',{kind:'error'})}`;return;
+    }
     const admin=this.status?.is_admin&&this.snapshot;
     const items=admin?[{id:'users',label:'Benutzer'},{id:'roles',label:'Rollen'},{id:'test',label:'Prüfen'},{id:'errors',label:'Fehler'}]:[{id:'test',label:'Prüfen'}];
     const content=!this.status?loadingState():this.tab==='users'&&admin?this.userContent():this.tab==='roles'&&admin?this.roleContent():this.tab==='errors'&&admin?this.errorContent():this.tab==='scope'?this.scopeContent():this.testContent();
-    this.shadowRoot.innerHTML=`<style>${UI_CSS}</style><div class="ui-card">${panelHeader({title:'Family Access',dirty:this.dirty,busy:this.busy,save:Boolean(admin)})}${this.status?navigation({label:'Family Access',items,active:this.tab==='scope'?'settings':this.tab,settingsLabel:'Umfang',help:false}):''}<main>${feedback('Vorabversion für Dashboardfreigaben und Navigation. Geräte- und Systemrechte werden durch Home Assistant verwaltet.',{kind:'warning'})}${this.error?feedback(this.error,{kind:'error'}):''}${this.notice?feedback(this.notice,{kind:'success'}):''}${content}</main></div>${confirmDialog({id:'discard-dialog',title:'Änderungen verwerfen?',message:'Ungespeicherte Änderungen verwerfen und Rechte neu laden?',confirmLabel:'Verwerfen und neu laden',confirmAction:'confirm-reload',cancelAction:'cancel-reload',danger:true})}`;
+    this.shadowRoot.innerHTML=`${styles}<div class="ui-card">${panelHeader({title:'Family Access',dirty:this.dirty,busy:this.busy,save:Boolean(admin)})}${this.status?navigation({label:'Family Access',items,active:this.tab==='scope'?'settings':this.tab,settingsLabel:'Einstellungen',help:false}):''}<main>${this.error?feedback(this.error,{kind:'error'}):''}${this.notice?feedback(this.notice,{kind:'success'}):''}${content}</main></div>${confirmDialog({id:'discard-dialog',title:'Änderungen verwerfen?',message:'Ungespeicherte Änderungen verwerfen und Rechte neu laden?',confirmLabel:'Verwerfen und neu laden',confirmAction:'confirm-reload',cancelAction:'cancel-reload',danger:true})}`;
   }
 }
 if(!customElements.get('family-access-panel'))customElements.define('family-access-panel',FamilyAccessPanel);

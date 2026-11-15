@@ -3,12 +3,12 @@ const {parseHTML}=require('linkedom');
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert/strict');
 const {window}=parseHTML('<html><body><family-access-panel></family-access-panel></body></html>');
 const context=vm.createContext({window,document:window.document,HTMLElement:window.HTMLElement,customElements:window.customElements,CustomEvent:window.CustomEvent,Event:window.Event,structuredClone,console,location:{origin:'https://example.ui.nabu.casa',hostname:'example.ui.nabu.casa'},MutationObserver:window.MutationObserver,queueMicrotask,setTimeout,clearTimeout,requestAnimationFrame:fn=>setTimeout(fn,0)});
-vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family_access_manager/frontend/family-ui/1.5.2/family-ui.js'),'utf8').replace(/^export /gm,''),context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family_access_manager/frontend/family-ui/1.6.0/family-ui.js'),'utf8').replace(/^export /gm,''),context);
 vm.runInContext('const esc=escapeHtml;',context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../custom_components/family_access_manager/frontend/panel.js'),'utf8').replace(/^import[^\n]*\n/,''),context);
 const panel=window.document.querySelector('family-access-panel');
 const policy={revision:0,native_dashboard_gate:false,device_control:false,roles:{family:{name:'Kinder',dashboards:{'dashboard-paul':'control'},entities:{},areas:{},labels:{}}},bindings:{paul:['family']},enabled_users:['paul']};
-const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.0.0-beta.1',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
+const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.0.0-beta.2',probe_entity_id:'switch.probe',dashboards:[{id:'dashboard-paul',name:'Paul'}],instance_id:'test'};
 const snapshot={policy,users:[{id:'manuel',name:'Manuel',admin:true,active:true},{id:'paul',name:'Paul',admin:false,active:true}],dashboards:[{id:'dashboard-paul',name:'Paul'}],entities:[{id:'switch.probe',name:'Testschalter'},{id:'light.paul',name:'<img src=x onerror=alert(1)>'}],areas:[],labels:[],events:[]};
 snapshot.dashboards.push({id:'dashboard-unsafe',name:'<img src=x onerror=alert(1)>'});
 snapshot.error_log=[{time:'2026-11-15T10:00:00Z',user_id:'paul',user_name:'Paul',operation:'read_dashboard',target:'dashboard-parents',reason:'Keine Dashboardfreigabe',source:'websocket',kind:'denied'}];
@@ -18,7 +18,7 @@ const settle=()=>new Promise(setImmediate);
 const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);assert(el,selector);el.click();};
 (async()=>{
   panel.hass={user:{id:'manuel'},callWS:async msg=>{
-    if(msg.action==='status')return structuredClone(status);
+    if(msg.action==='status'||msg.action==='admin_panel_status')return structuredClone(status);
     if(msg.action==='admin_snapshot')return structuredClone(snapshot);
     if(msg.action==='admin_error_log')return {events:structuredClone(snapshot.error_log),limit:200};
     if(msg.action==='save_policy'){saves++;snapshot.policy=structuredClone(msg.payload);return {revision:1};}
@@ -61,7 +61,9 @@ const click=(selector)=>{const el=panel.shadowRoot.querySelector(selector);asser
   assert(panel.shadowRoot.innerHTML.includes('dashboard-parents'));
   assert(!panel.shadowRoot.innerHTML.includes('Gerätefreigaben'));
   status.is_admin=false;
-  panel.hass={user:{id:'paul'},callWS:async msg=>structuredClone(status)};await settle();
+  panel.hass={user:{id:'paul',is_admin:false},callWS:async msg=>{if(msg.action==='admin_panel_status')throw Object.assign(new Error('Nur Administratoren'),{code:'unauthorized'});return structuredClone(status);}};await settle();
+  assert(panel.shadowRoot.innerHTML.includes('nur für Administratoren'));
+  assert.equal(panel.shadowRoot.querySelector('.card-top'),null);
   assert.equal(panel.shadowRoot.querySelector('[data-action="navigate"][data-page="users"]'),null);
   assert.equal(panel.shadowRoot.querySelector('[data-action="save"]'),null);
   assert.equal(panel.shadowRoot.querySelector('[data-action="navigate"][data-page="errors"]'),null);

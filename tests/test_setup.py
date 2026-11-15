@@ -4,7 +4,9 @@ from copy import deepcopy
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.family_access_manager.const import DOMAIN
+from homeassistant.components import frontend
+
+from custom_components.family_access_manager.const import DOMAIN, PANEL_PATH
 from custom_components.family_access_manager.policy import Policy
 
 
@@ -16,6 +18,7 @@ async def test_entry_setup_probe_control_and_unload(hass, enable_custom_integrat
     runtime = hass.data[DOMAIN]
     assert runtime.gate.available
     assert runtime.sidebar.available
+    assert hass.data[frontend.DATA_PANELS][PANEL_PATH].require_admin
     assert runtime.probe_entity_id is not None
     assert hass.states.get(runtime.probe_entity_id).state == "off"
     config = deepcopy(runtime.policy.config)

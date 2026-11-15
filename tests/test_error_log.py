@@ -142,3 +142,18 @@ async def test_unavailable_allowed_dashboard_is_logged(runtime, child, grant):
         await runtime.dispatch(child[0], "read_dashboard", {"url_path": "dashboard-deleted"})
     event = runtime.error_log.snapshot()[0]
     assert event["target"] == "dashboard-deleted" and event["kind"] == "error"
+
+
+async def test_panel_bootstrap_is_server_admin_only_for_direct_rest_and_ws_calls(runtime, hass, child, grant, hass_client, hass_ws_client, hass_admin_user):
+    client = await hass_client(child[1])
+    response = await client.post(URL, json={"action": "admin_panel_status", "payload": {}})
+    assert response.status == 403
+    ws = await hass_ws_client(hass, access_token=child[1])
+    await ws.send_json({"id": 1, "type": "family_access_manager/request", "action": "admin_panel_status"})
+    message = await ws.receive_json()
+    assert not message["success"] and message["error"]["code"] == "unauthorized"
+    errors = runtime.error_log.snapshot()
+    assert errors[0]["operation"] == "admin_panel_status"
+    assert errors[0]["user_id"] == child[0].id
+    result = await runtime.dispatch(hass_admin_user, "admin_panel_status", {})
+    assert result["is_admin"]
