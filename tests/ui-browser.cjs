@@ -9,7 +9,7 @@ snapshot.applications=[{"id": "light_manager", "name": "Light Manager", "permiss
 snapshot.dashboards.push({id:'dashboard-long-name',name:'LangeDashboardbezeichnungOhneLeerzeichenDieAufDemHandyUmgebrochenWerdenMuss'},{id:'dashboard-unsafe',name:'<img src=x onerror=alert(1)>'});
 snapshot.error_log=[{time:'2026-11-15T10:00:00Z',user_id:'paul',user_name:'Paul',operation:'read_dashboard',target:'dashboard-parents',reason:'Die Rolle enthält keine Freigabe für dieses Dashboard.',source:'websocket',kind:'denied'}];
 snapshot.error_log.push({...snapshot.error_log[0],user_name:'<img src=x onerror=alert(1)>',reason:'<img src=x onerror=alert(1)> Lange Diagnose für einen sicheren Umbruch auf Mobilgeräten'});
-const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.1.0',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
+const status={is_admin:true,sidebar_available:true,sidebar_filter:false,roles:[],gate_available:true,native_dashboard_gate:false,device_control:false,version:'1.1.1',probe_entity_id:'switch.probe',dashboards:snapshot.dashboards,instance_id:'fixture'};
 window.fixture={snapshot,status,saves:[],calls:[],state:'off'};
 const hass={user:{id:'manuel'},callWS:async msg=>{window.fixture.calls.push(msg.action);if(msg.action==='admin_panel_status'){if(!status.is_admin)throw Object.assign(new Error('Nur Administratoren'),{code:'unauthorized'});return structuredClone(status);}if(msg.action==='status')return structuredClone(status);if(msg.action==='admin_snapshot'){if(!status.is_admin)throw Error('Nicht freigegeben');return structuredClone(snapshot);}if(msg.action==='admin_sidebar')return {user_id:msg.payload.user_id,token:'fixture-token',visible_dashboards:snapshot.dashboards.map(d=>d.id),default_panel:'dashboard-paul'};if(msg.action==='save_admin_sidebar'){window.fixture.adminSave=structuredClone(msg.payload);return msg.payload;}if(msg.action==='apply_dashboard_order'){window.fixture.orderApply=structuredClone(msg.payload);return {applied:msg.payload.user_ids,failed:[]};}if(msg.action==='save_policy'){if(!status.is_admin)throw Error('Nicht freigegeben');snapshot.policy=structuredClone(msg.payload);snapshot.policy.revision++;window.fixture.saves.push(structuredClone(msg.payload));for(const u of snapshot.users.filter(u=>u.admin)){delete snapshot.policy.bindings[u.id];snapshot.policy.enabled_users=snapshot.policy.enabled_users.filter(id=>id!==u.id);}return {revision:snapshot.policy.revision,policy:structuredClone(snapshot.policy)};}if(msg.action==='read_entity')return {state:window.fixture.state};if(msg.action==='call_service'){if(!status.is_admin)throw Error('Nicht freigegeben');window.fixture.state=window.fixture.state==='off'?'on':'off';return {executed:true};}if(msg.action==='admin_error_log'){if(!status.is_admin)throw Error('Nicht freigegeben');return {events:structuredClone(snapshot.error_log),limit:200};}if(msg.action==='read_dashboard'){if(!status.is_admin)throw Error('Nicht freigegeben');return {views:[]};}throw Error('Unknown action');},callApi:async()=>({result:structuredClone(status)})};
 window.fixture.hass=hass;const app=document.createElement('family-access-panel');document.body.append(app);app.hass=hass;window.app=app;
@@ -32,6 +32,11 @@ const server=http.createServer((req,res)=>{
    await page.setViewportSize({width,height:1000});await page.evaluate(dark=>document.body.classList.toggle('dark',dark),theme==='dark');
    for(const [id,label] of pages){
     await app.locator('.card-top').getByRole('button',{name:label,exact:true}).click();
+    const activeTab=app.locator('nav [aria-current="page"]');
+    if(await activeTab.count()){
+      const position=await activeTab.evaluate(el=>{const a=el.getBoundingClientRect(),n=el.closest('nav').getBoundingClientRect();return {left:a.left-n.left,right:a.right-n.right};});
+      assert(position.left>=-1&&position.right<=1,'Active tab remains visible '+[width,theme,id]);
+    }
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No document overflow: '+[width,theme,id]);
     const bad=await app.evaluate(el=>[...el.shadowRoot.querySelectorAll('.setting-row,.grid,.card-top,.fui-panel-header')].filter(n=>n.scrollWidth>n.clientWidth+1).map(n=>[n.className,n.scrollWidth,n.clientWidth]));
     assert.deepEqual(bad,[],'No control overflow: '+[width,theme,id]);
@@ -51,6 +56,7 @@ const server=http.createServer((req,res)=>{
   await app.locator('.card-top').getByRole('button',{name:'Essensplaner',exact:true}).click();
   await app.getByRole('switch',{name:'Einträge anderer Benutzer löschen',exact:true}).click();
   assert.equal(await page.evaluate(()=>window.app.policy.roles.family.applications.essensplaner.delete_others),true);
+  assert.equal(await app.getByRole('switch',{name:'Einträge anderer Benutzer löschen',exact:true}).evaluate(el=>el===el.getRootNode().activeElement),true,'Permission toggle retains focus');
   await app.getByRole('switch',{name:'Essensplan ansehen',exact:true}).click();
   assert.equal(await page.evaluate(()=>window.app.policy.roles.family.applications.essensplaner.delete_others),false);
   await page.setViewportSize({width:390,height:1000});await app.locator('.card-top').getByRole('button',{name:'Benutzer',exact:true}).click();
@@ -148,8 +154,8 @@ const server=http.createServer((req,res)=>{
   await app.getByRole('status').filter({hasText:'Admin-Seitenleiste gespeichert'}).waitFor();
   await app.locator('.card-top').getByRole('button',{name:'Einstellungen',exact:true}).click();
   assert.equal(await app.locator('#versions-content').isVisible(),true);
-  assert((await app.locator('#versions-content').textContent()).includes('Oberfläche 1.1.0'));
-  assert((await app.locator('#versions-content').textContent()).includes('Integration 1.1.0'));
+  assert((await app.locator('#versions-content').textContent()).includes('Oberfläche 1.1.1'));
+  assert((await app.locator('#versions-content').textContent()).includes('Integration 1.1.1'));
   assert((await app.locator('#versions-content').textContent()).includes('UI 1.6.0'));
   await app.locator('.card-top').getByRole('button',{name:'Rollen',exact:true}).click();
   await app.getByRole('combobox',{name:'Rolle',exact:true}).selectOption('unused');
