@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.3.1
+
+Die Tabs stehen jetzt in der Reihenfolge Benutzer, Dashboards, Urlaubsmodus, Rollenverwaltung, gefolgt von den Anwendungstabs und Fehler. Rollenrechte, Darstellungen und der zentrale Urlaubsstatus bleiben unverändert.
+
+
 ## 1.3.0
 
 Die Integration heißt jetzt **Family Administration**. Darstellung und App-Rollen werden getrennt zugewiesen: Maximilian kann Darstellung „Maximilian“ und App-Rolle „Benutzer“ erhalten, Paul Darstellung „Paul“ und dieselbe App-Rolle „Benutzer“. Rechte je App einmal in der gemeinsamen Rolle pflegen; Änderungen gelten für alle zugeordneten Benutzer.
