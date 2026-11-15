@@ -185,7 +185,7 @@ const server=http.createServer((req,res)=>{
   assert.equal(await adminProfile.getByText('App-Rollen',{exact:true}).count(),0);
   for(const width of [320,390,1100])for(const dark of [false,true]){
     await page.setViewportSize({width,height:1000});
-    await page.evaluate(dark=>{for(const [key,value] of Object.entries({'--ha-card-background':dark?'#202020':'#fff','--primary-text-color':dark?'#eee':'#212121','--secondary-text-color':dark?'#aaa':'#727272','--divider-color':dark?'#444':'#e0e0e0','--input-fill-color':dark?'#2b2c2e':'#f5f5f5'}))document.documentElement.style.setProperty(key,value);},dark);
+    await page.evaluate(dark=>document.body.classList.toggle('dark',dark),dark);
     assert.equal(await adminProfile.evaluate(el=>el.scrollWidth>el.clientWidth),false);
     await page.screenshot({path:path.join(root,'test-results/admin-presentation-'+width+'-'+(dark?'dark':'light')+'.png'),fullPage:true});
   }
