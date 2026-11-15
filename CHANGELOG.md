@@ -7,6 +7,7 @@
 - Bestehende Benutzerzuordnungen werden beim Laden sicher in aktive Zuordnungen übernommen.
 - HTTP, WebSocket und die optionale Dashboard-Sperre berücksichtigen die Auswahl serverseitig.
 - Tests für Migration, Speicherung, selektive Sperre, bestehende Verbindungen und Selbstaktivierungsversuche ergänzt.
+- Separates Original-Stylesheet des UI Kits vollständig in beide ZIP-Pakete aufgenommen.
 
 ## 0.2.0 – 10. November 2026
 

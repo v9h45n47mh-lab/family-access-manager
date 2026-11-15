@@ -7,7 +7,7 @@ Ziel: dieselben erwarteten Erlaubnisse und Ablehnungen lokal und über Nabu Casa
 1. Integration gemäß README installieren.
 2. Als Administrator eine Rolle „Zugriffstest“ anlegen.
 3. Genau ein Dashboard freigeben und den Testschalter zunächst nur zum Anzeigen erlauben.
-4. Rolle einem normalen Testkonto zuordnen. Das Konto darf kein HA-Administrator und nicht der Eigentümer sein.
+4. Unter **Benutzer** die Rolle einem normalen Testkonto zuordnen und **Family Access für dieses Konto einschalten**. Das Konto darf kein HA-Administrator und nicht der Eigentümer sein.
 5. Speichern. Optional die native Dashboard-Konfigurationssperre einschalten.
 6. Testkonto in einem separaten Browserprofil oder privaten Fenster anmelden.
 
@@ -23,6 +23,9 @@ Ziel: dieselben erwarteten Erlaubnisse und Ablehnungen lokal und über Nabu Casa
 | Nicht freigegebenes Dashboard direkt neu öffnen, Sperre eingeschaltet | Konfigurationsabfrage abgelehnt | Offen | Offen |
 | Testschalter auf „Bedienen“ ändern, dann umschalten | Erlaubt; virtueller Zustand wechselt | Offen | Offen |
 | Rolle bei offener Verbindung auf „Kein Zugriff“ ändern, erneut abfragen | Neue Anfrage abgelehnt | Offen | Offen |
+| Family Access für das Testkonto ausschalten und speichern | Rolle bleibt gespeichert; native Dashboard-Sperre gilt für dieses Konto nicht mehr, eigene Gerätefunktionen verweigern ohne Aktivierung | Offen | Offen |
+| Family Access wieder einschalten und speichern | Gespeicherte Rolle gilt bei der nächsten Anfrage wieder | Offen | Offen |
+| Zweites normales Konto ohne Aktivierung verwenden | Native Dashboard-Konfigurationsabfragen werden durch Family Access nicht eingeschränkt | Offen | Offen |
 | Als Administrator weiterarbeiten | Vollzugriff bleibt erhalten | Offen | Offen |
 
 Für die Cloudprüfung ausdrücklich die **Nabu-Casa-Adresse** verwenden. In der Companion-App kann eine interne URL automatisch bevorzugt werden. Der Test zeigt die aufrufende Adresse an; eine allgemeine Erfolgsmeldung im Heimnetz beweist noch keinen Cloudzugriff.

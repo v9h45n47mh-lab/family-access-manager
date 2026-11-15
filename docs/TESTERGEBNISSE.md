@@ -1,38 +1,31 @@
-# Abgeschlossene Prüfungen – Version 0.2.0
+# Abgeschlossene Prüfungen – Version 0.3.0
 
-Stand: 10. November 2026. Getesteter Implementierungsstand: `21de74b4017d7dfa6e9c982011f97af53e1080fa`.
+Stand: 15. November 2026. Getesteter Implementierungsstand: `a8c1cce09255de313a777f0710604a456a1913e5`.
 
-[Erfolgreicher GitHub-Actions-Lauf](https://github.com/v9h45n47mh-lab/family-access-manager/actions/runs/42872609399). Die Veröffentlichung führt dieselben Prüfungen auf dem Release-Commit erneut aus.
+[Erfolgreicher CI-Lauf](https://github.com/v9h45n47mh-lab/family-access-manager/actions/runs/43689876862). Der Release-Commit durchläuft dieselben Prüfungen erneut.
 
 | Prüfung | Umgebung | Ergebnis |
 |---|---|---|
-| Rechteauswertung, Manipulationsversuche, Parameterprüfung, HTTP-/WebSocket-Autorisierung, native Dashboard-Konfigurationssperre, Einrichtung und Entladen | Home Assistant Core 2026.10.4, Python 3.14.10, pytest | 39 Tests bestanden |
-| Installation, virtueller Schalter, echte HTTP-/WebSocket-Anfragen, Autorisierung, Dashboard-Sperre, Entladen und erneutes Einrichten | Isolierte HA-Instanz 2026.11.1, Frontend 20261028.5 | 12 Prüfungen bestanden; Ausgabe in `current_core_result.json` |
-| Lokal eingebundenes UI-Kit-Modul | Echter HA-Frontend-Endpunkt | HTTP 200 und JavaScript-MIME-Typ |
-| Marketplace-Logo | Echter lokaler HA-Marketplace-Brand-Endpunkt | HTTP 200, PNG-Bytes entsprechen dem mitgelieferten Logo |
-| UI-Kit-Herkunft und Gestaltung | Prüfsummenvergleich mit HA UI Kit 1.2.1 | JavaScript, CSS und Lizenz unverändert; Panel importiert gemeinsame Komponenten und enthält ausschließlich `UI_CSS` |
-| Oberfläche: Administratoransicht, Rollenspeicherung, HTML-Escaping, HTTP-/WS-Prüfaktion und ausgeblendete Verwaltung beim Kind | Node.js, LinkeDOM | 5 Funktionsprüfungen bestanden |
-| Browserdarstellung | Echtes Chromium, Breiten 1100, 430, 390, 375 und 320 px; helles und dunkles Theme; Benutzer, Rollen, Prüfen und Umfang | 40 Varianten bestanden |
-| Übereinstimmung mit dem UI Kit | Berechnete Browserstile im direkten Vergleich mit separat gerenderten Originalkomponenten | Panel-Kopf, Navigation, Typografie, Inhaltsbereich, Zeilen, Auswahlfelder, Schalter und Buttons entsprechen dem Kit |
-| Umbruch und Platzbedarf | Alle 40 Browservarianten, einschließlich langer Entitätsnamen | Kein horizontaler Überlauf von Seite, Zeilen, Raster, Kopf oder Bedienelementen |
-| Browserbedienung | Chromium mit Testkonten und HA-Client-Fixture | Zuordnung, Schalter, Berechtigungen speichern, Suche, Escaping, Dialogabbruch/Escape/Fokusrückgabe, API-Prüfung und virtueller Testschalter bestanden; Kind ohne Verwaltung |
-| Visuelle Sichtprüfung | Erzeugte Screenshots: Benutzer Desktop hell / Mobil dunkel, Rollen Desktop dunkel / Mobil hell | Lesbare Umbrüche, keine abgeschnittenen oder überlagerten Bedienelemente; Gestaltung entspricht dem Kit |
-| Backend-Vergleich | Quellcodevergleich mit Version 0.1.0 | API, Gate, Policy, Runtime, Services, Switch, Config Flow und Einrichtung unverändert |
-| JavaScript-Syntax und Release-Pakete | Node.js und Python | Bestanden; Kit, Lizenz und Branding in den ZIPs enthalten |
+| Bestehende Rechteauswertung, Manipulationsversuche, Autorisierung, Einrichtung und neue Benutzeraktivierung | HA 2026.10.4, Python 3.14.10, pytest | 53 Tests bestanden, darunter 14 neue Aktivierungs- und Migrationsprüfungen |
+| Aktivierung unabhängig von der Rolle | Policy und Browser | Neue Benutzer aus; Rolle vorbereiten aktiviert nicht; Ausschalten erhält die Rolle; Wiedereinschalten stellt ihre Freigaben wieder her |
+| Selektive native Dashboard-Sperre | Zwei HA-Konten und offene WebSocket-Verbindungen | Nur gewähltes Konto eingeschränkt; Ein-/Ausschalten wirkt auf der nächsten Anfrage |
+| Speicherung und Migration | HA-Store und strikte Policy-Validierung | Alte Zuordnungen einschließlich leerer Zuordnungen bleiben aktiv; deaktivierte Auswahl und Rolle über Neuladen erhalten |
+| Selbstaktivierung und ungültige Eingaben | Echte HA-HTTP-/WebSocket-Testendpunkte | Normale Benutzer können sich nicht selbst aktivieren; Administratorzuordnung und fehlerhafte Aktivierungslisten abgelehnt |
+| Installation, echte Serviceausführung, HTTP/WebSocket, Aktivierung, Entladen und Neuladen | Isolierter HA Core 2026.11.1 mit Frontend 20261028.5 | 14 Prüfungen bestanden; Ausgabe in `current_core_result.json` |
+| Aktuelle Core-Aktivierung | Admin speichert über echte HTTP-Anfragen; Benutzerverbindung bleibt offen | Ausschalten erhält die Rolle und entzieht eigene API-Freigaben; Wiedereinschalten greift auf bestehender Verbindung |
+| UI-Kit und Marketplace-Logo | Originalprüfsummen und echte HA-Endpunkte | HA UI Kit 1.2.1 unverändert, nur gemeinsames UI_CSS; JavaScript-MIME-Typ und lokale PNG-Bytes korrekt |
+| Bedienlogik und Escaping | Node.js, LinkeDOM | Sechs Funktionsprüfungen einschließlich Benutzeraktivierung bestanden |
+| Browserdarstellung | Chromium; 1100/430/390/375/320 px; hell/dunkel; Benutzer/Rollen/Prüfen/Umfang | 40 Varianten bestanden; berechnete Stile direkt mit Originalkomponenten verglichen; kein horizontaler Überlauf |
+| Browserbedienung | HA-Client-Fixture im echten Browser | Aktivierung, gespeicherte Auswahl, erhaltene Rolle und Tastaturfokus sowie bestehende Berechtigungs-, Such- und Dialogabläufe erfolgreich |
+| Visuelle Sichtprüfung | Neue Benutzeransicht Desktop hell / Mobil dunkel | Schalter, Status und Rollenfelder lesbar, keine abgeschnittenen oder überlagerten Bedienelemente |
+| Release-Pakete | Deterministischer Python-Build | Kit einschließlich separater Original-CSS, Lizenz und Branding vollständig in den ZIPs enthalten |
 
-Die Browserprüfungen erzeugen 16 Screenshots der vier Ansichten bei 1100 und 390 px in beiden Themes. Sie werden im CI-Artefakt `ui-screenshots` gespeichert. Die HA-Client-Antworten sind dort feste Testdaten; das Rendering und die UI-Kit-Komponenten laufen im echten Browser. Die unabhängigen Core-Prüfungen verwenden echte HA-HTTP-/WebSocket-Endpunkte.
+Die Browserprüfung erzeugt 16 Screenshots bei 1100 und 390 px in beiden Themes im CI-Artefakt `ui-screenshots`. HA-Client-Antworten sind feste Testdaten; Rendering und UI-Kit-Komponenten laufen im echten Chromium. Die unabhängigen Core-Prüfungen verwenden echte HA-HTTP-/WebSocket-Endpunkte.
 
 ## Grenzen der Prüfung
 
-- Kein Livezugriff über dein Nabu-Casa-Konto oder deine produktive HA-Instanz. Die Prüfung des Cloud-Adapters bestätigt den gemeinsamen HA-AppRunner im Quellcode und ersetzt keinen Relaytest.
-- Keine vollständige Absicherung der nativen HA-Geräte-APIs und alternativer Datenwege; dies ist weiterhin nicht implementiert.
-- Keine allgemeine Freigabe des nativen Dashboardeditors für normale Benutzer.
-- Kein Zusammenspieltest mit deinen installierten Custom Cards, Light Manager, Shutter Manager oder Weckern.
-- Die Integration besitzt keinen Kalender. Die Umstellung fügt keine Kalenderfunktion hinzu.
-- Die Browserprüfung verwendet Chromium und festgelegte Test-Themes; ein Test auf einem physischen iPhone oder mit individuellen Themes wurde nicht durchgeführt.
+Kein Test mit deiner produktiven HA-Instanz, deinem Nabu-Casa-Konto, physischen iPhones, individuellen Themes oder deinen übrigen Custom-Integrationen. Die Core-Testumgebung verwendet eine simulierte Loopback-Netzwerkschnittstelle; HTTP/WebSocket und Serviceausführung sind echt. Die Cloud-Adapter-Prüfung bestätigt den gemeinsamen HA-AppRunner im Quellcode und ersetzt keinen Relaytest.
 
-Die isolierte Core-Testumgebung verwendet eine simulierte Loopback-Netzwerkschnittstelle. Die HTTP-/WebSocket-Aufrufe und die HA-Serviceausführung sind echt. Netzwerkgeräte, automatische Erkennung und das Cloudkonto sind nicht Teil des Testergebnisses.
+## Schutzumfang
 
-## Schutzumfang des Prototyps
-
-Die bestandenen Tests gelten für die eigene Family-Access-API und die ausdrücklich eingeschaltete Dashboard-Konfigurationssperre. Version 0.2.0 behält diesen Schutzumfang und die bisherigen Berechtigungsregeln bei.
+Die Aktivierung steuert den vorhandenen Family-Access-Schutzumfang je Benutzer. Ausgeschaltete Konten behalten ihren nativen HA-Zugriff und erhalten über die eigene Family-Access-API keine zusätzlichen Geräte- oder Dashboardfreigaben. Die optionale Dashboard-Konfigurationssperre greift nur bei aktivierten Konten und eingeschaltetem globalem Schalter. Administratoren behalten Vollzugriff. Allgemeine native HA-Geräte-APIs und der native Dashboardeditor werden dadurch nicht zusätzlich freigeschaltet oder abgesichert.

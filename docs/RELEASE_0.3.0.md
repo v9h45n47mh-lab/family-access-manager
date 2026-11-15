@@ -7,6 +7,8 @@ Family Access lässt sich jetzt **je Benutzer einzeln ein- und ausschalten**.
 - Die optionale Dashboard-Konfigurationssperre gilt ausschließlich für aktivierte Benutzer. Administratoren behalten Vollzugriff.
 - Die gemeinsamen Bedienelemente von HA UI Kit 1.2.1 bleiben unverändert eingebunden.
 
+Geprüft: **53 HA-Tests, 14 aktuelle Core-Prüfungen und 40 Browservarianten** für Desktop/Mobil und helle/dunkle Themes. Details: [Prüfergebnisse](https://github.com/v9h45n47mh-lab/family-access-manager/blob/v0.3.0/docs/TESTERGEBNISSE.md).
+
 Für den Test: **Benutzer → Testuser → Family Access einschalten → Rolle wählen → Änderungen speichern**. Für die native Dashboard-Konfigurationsprüfung zusätzlich den globalen Schalter „Dashboard-Konfigurationen sperren“ einschalten.
 
 Die Version bleibt eine Prüfversion mit dem bisherigen Schutzumfang. Allgemeine HA-Geräte-APIs werden dadurch weiterhin nicht gesperrt. Für ausgeschaltete Benutzer bleibt der native HA-Zugriff unverändert; die eigenen Family-Access-Gerätefunktionen erteilen ihnen keine zusätzlichen Freigaben.

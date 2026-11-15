@@ -1,6 +1,6 @@
 # Family Access Manager 0.3.0
 
-Erste installierbare Prüfversion einer Benutzerberechtigungsverwaltung für Home Assistant.
+Installierbare Prüfversion einer Benutzerberechtigungsverwaltung für Home Assistant.
 
 **Diese Version ist noch keine umfassende Zugriffssperre für Home Assistant.** Sie prüft die eigenen HTTP- und WebSocket-Funktionen im Backend. Optional sperrt sie direkte Abfragen ausgewählter Lovelace-Dashboard-Konfigurationen für zugeordnete Benutzer. Allgemeine HA-Geräte-APIs, Suche, Verlauf, Kameras, Assist und Drittintegrationen sind noch nicht allgemein abgesichert.
 
@@ -73,7 +73,7 @@ Es werden keine Ports, Netzwerkeinstellungen, HA-Gruppen oder vorhandenen Tokens
 | Gerät: Bedienen | Zusätzlich die unterstützten Aktionen über die eigene API ausführen. |
 | Administrator/Eigentümer | Echte HA-Administratoren und der Eigentümer behalten Vollzugriff. Rollen können keine Administratorrechte verleihen. |
 
-Gerätebedienung ist zunächst nur für den virtuellen Testschalter eingeschaltet. Die Option **Freigegebene Geräte über die Family-Access-API bedienen** erlaubt darüber hinaus ausdrücklich freigegebene Lampen, Schalter, Input-Booleans und Abdeckungen. Es gibt dafür in 0.2.0 noch keine allgemeine Gerätebedienoberfläche; die Funktionen sind für die spätere Einbindung vorbereitet.
+Gerätebedienung ist zunächst nur für den virtuellen Testschalter eingeschaltet. Die Option **Freigegebene Geräte über die Family-Access-API bedienen** erlaubt darüber hinaus ausdrücklich freigegebene Lampen, Schalter, Input-Booleans und Abdeckungen. Es gibt dafür weiterhin keine allgemeine Gerätebedienoberfläche; die Funktionen sind für die spätere Einbindung vorbereitet.
 
 Freigaben aus mehreren Quellen werden addiert; die höhere Freigabe gilt. **Kein Zugriff** entfernt einen Eintrag, ist aber kein ausdrückliches Verbot gegenüber einer zusätzlichen Bereichs- oder Labelfreigabe. Labels werden bei jeder Anfrage anhand der aktuellen Entitäts- und Gerätezuordnung ausgewertet. Bereiche werden direkt von der Entität oder ersatzweise vom Gerät übernommen. Neue entsprechend zugeordnete Entitäten erhalten damit automatisch die Freigabe. Labels auf anderen Objekttypen werden nicht geerbt.
 
